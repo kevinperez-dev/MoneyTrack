@@ -1,0 +1,23 @@
+{
+  "name": "moneytrack",
+  "version": "1.0.0",
+  "description": "Proyecto MoneyTrack con frontend React, backend Express y PostgreSQL",
+  "private": true,
+  "scripts": {
+    "dev": "concurrently -n BACKEND,FRONTEND -c blue,green \"npm --prefix moneytrack-backend run dev\" \"npm --prefix moneytrack-frontend run dev\"",
+    "backend": "npm --prefix moneytrack-backend run dev",
+    "frontend": "npm --prefix moneytrack-frontend run dev",
+    "build": "vite build",
+    "format": "prettier . --write"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1",
+    "prettier": "3.6.2"
+  },
+  "prettier": {
+    "singleQuote": true,
+    "semi": true,
+    "tabWidth": 2,
+    "printWidth": 100
+  }
+}
