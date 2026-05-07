@@ -1,9 +1,10 @@
 // Archivo: src/pages/Login.jsx
-// Propósito: pantalla de inicio de sesión conectada al backend sin renderizar <body> dentro de React
+// Propósito: pantalla de inicio de sesión conectada al backend de MoneyTrack
 
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../services/authApi';
+import '../styles/login.css';
 
 function Login() {
   const navigate = useNavigate();
@@ -20,7 +21,7 @@ function Login() {
   // Estado para bloquear el botón mientras se valida el usuario
   const [isLoading, setIsLoading] = useState(false);
 
-  // Aplica la clase correcta al body real del documento
+  // Aplica la clase del fondo al body real del documento
   useEffect(() => {
     document.body.classList.remove(
       'pagina-dashboard',
@@ -56,6 +57,7 @@ function Login() {
     }
 
     try {
+      // Activa estado de carga mientras se valida el usuario
       setIsLoading(true);
       setError('');
 
@@ -69,8 +71,12 @@ function Login() {
 
       navigate('/inicio', { replace: true });
     } catch (error) {
+      // Mostrar en consola el error real para depurar conexión o credenciales
+      console.error('Error al iniciar sesión:', error);
+
       setError(error.message || 'No se pudo iniciar sesión.');
     } finally {
+      // Desactiva la carga aunque el login falle o sea exitoso
       setIsLoading(false);
     }
   };
@@ -79,11 +85,11 @@ function Login() {
     <main className="login-wrapper">
       <section className="login-card">
         <div className="login-brand">
-          <img src="/logo-fondo.png" alt="Pegaso Logo" className="login-logo" />
+          <img src="/logo-fondo.png" alt="MoneyTrack Logo" className="login-logo" />
 
           <div>
-            <h1>MoneyTrack</h1>
-            <p>Sistema de Control de Movimientos Financieros</p>
+            <h1>Proyecto Web</h1>
+            <p>Proyecto para la materia de Desarrollo web</p>
           </div>
         </div>
 
@@ -95,6 +101,7 @@ function Login() {
 
             <div className="input-wrap">
               <span className="material-icons-outlined">person</span>
+
               <input
                 type="text"
                 id="username"
@@ -112,6 +119,7 @@ function Login() {
 
             <div className="input-wrap">
               <span className="material-icons-outlined">lock</span>
+
               <input
                 type="password"
                 id="password"
@@ -126,7 +134,7 @@ function Login() {
 
           <button type="submit" className="btn-login" disabled={isLoading}>
             <span className="material-icons-outlined">login</span>
-            {isLoading ? 'Validando conexión...' : 'Ingresar'}
+            {isLoading ? 'Conectando con el servidor...' : 'Ingresar'}
           </button>
         </form>
       </section>

@@ -333,7 +333,7 @@ function Dashboard() {
     const clone = labelSheetRef.current.cloneNode(true);
 
     // Usa el logo desde la carpeta public para que funcione en local y producción.
-    const logoUrl = new URL('/logo-sinFondo.png', window.location.origin).href;
+    const logoUrl = new URL('/snoopy-laptop-removebg-preview.png', window.location.origin).href;
 
     // Asegura que las imágenes del ticket usen una ruta válida en producción.
     clone.querySelectorAll('img').forEach((img) => {
@@ -404,11 +404,11 @@ function Dashboard() {
       gap: 10px;
     }
 
-    .label-brand img {
-      width: 48px;
-      height: 48px;
-      object-fit: contain;
-    }
+.label-brand img {
+  width: 62px;
+  height: 62px;
+  object-fit: contain;
+}
 
     .label-brand h3 {
       font-size: 1rem;
@@ -740,9 +740,9 @@ function Dashboard() {
               <div className="label-sheet" ref={labelSheetRef}>
                 <div className="label-top">
                   <div className="label-brand">
-                    <img src="/logo-fondo.png" alt="alt" />
+                    <img src="/snoopy-laptop-removebg-preview.png" alt="alt" />
                     <div>
-                      <h3>MoneyTrack</h3>
+                      <h3>ITT</h3>
                       <p>{config.previewText}</p>
                     </div>
                   </div>

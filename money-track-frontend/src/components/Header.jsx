@@ -34,7 +34,7 @@ function Header({ activePage = '', movementType = 'ingreso', onMovementTypeChang
             <div className="topbar-left">
                 <div className="brand">
                     <img src="/logo-sinFondo.png" alt="Logo" className="brand-logo" />
-                    <span className="brand-name">MoneyTrack</span>
+                    <span className="brand-name">ITT</span>
                 </div>
 
                 <nav className="top-nav">

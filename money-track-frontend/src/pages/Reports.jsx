@@ -1,11 +1,15 @@
 // Archivo: src/pages/Reports.jsx
-// Propósito: vista de reportes conectada con Express/PostgreSQL.
+// Propósito: vista de reportes conectada con Express/PostgreSQL, con edición y eliminación de movimientos.
 
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Header from '../components/Header.jsx';
-import { getMovements } from '../services/movementsApi.js';
+import {
+  deleteMovement,
+  getMovements,
+  updateMovement,
+} from '../services/movementsApi.js';
 
 import {
   exportRowsToExcelXml,
@@ -25,8 +29,22 @@ function Reports() {
 
   // Estados de carga, errores y notificaciones.
   const [isLoading, setIsLoading] = useState(true);
+  const [isUpdating, setIsUpdating] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
   const [apiError, setApiError] = useState('');
   const [toast, setToast] = useState(null);
+
+  // Estado del modal de edición.
+  const [editingRecord, setEditingRecord] = useState(null);
+  const [editForm, setEditForm] = useState({
+    tipo: 'ingreso',
+    fecha: '',
+    folio: '',
+    nombre: '',
+    descripcion: '',
+    cantidad: '',
+    moneda: ''
+  });
 
   // Filtros de reportes.
   const [period, setPeriod] = useState(String(getCurrentISOWeek().year));
@@ -180,6 +198,141 @@ function Reports() {
     return () => clearTimeout(timeoutId);
   }, [toast]);
 
+  // Actualiza un campo del formulario de edición.
+  const updateEditForm = (field, value) => {
+    setEditForm((current) => ({
+      ...current,
+      [field]: value
+    }));
+  };
+
+  // Abre el modal cargando los datos del movimiento seleccionado.
+  const openEditModal = (record) => {
+    setEditingRecord(record);
+    setEditForm({
+      tipo: record.tipo,
+      fecha: record.fecha,
+      folio: record.folio,
+      nombre: record.nombre,
+      descripcion: record.descripcion,
+      cantidad: String(record.cantidad),
+      moneda: record.moneda
+    });
+  };
+
+  // Cierra el modal de edición sin modificar el registro.
+  const closeEditModal = () => {
+    if (isUpdating) return;
+
+    setEditingRecord(null);
+    setEditForm({
+      tipo: 'ingreso',
+      fecha: '',
+      folio: '',
+      nombre: '',
+      descripcion: '',
+      cantidad: '',
+      moneda: ''
+    });
+  };
+
+  // Guarda la edición del movimiento seleccionado.
+  const saveEditedMovement = async (event) => {
+    event.preventDefault();
+
+    if (
+      !editForm.tipo ||
+      !editForm.fecha ||
+      !editForm.folio.trim() ||
+      !editForm.nombre.trim() ||
+      !editForm.descripcion.trim() ||
+      Number(editForm.cantidad) <= 0 ||
+      !editForm.moneda
+    ) {
+      setToast({
+        title: 'Error',
+        text: 'Completa todos los campos antes de guardar la modificación.',
+        type: 'error'
+      });
+      return;
+    }
+
+    if (!editingRecord) return;
+
+    const updatedPayload = {
+      tipo: editForm.tipo,
+      fecha: editForm.fecha,
+      folio: editForm.folio.trim(),
+      nombre: editForm.nombre.trim(),
+      descripcion: editForm.descripcion.trim(),
+      cantidad: Number(editForm.cantidad),
+      moneda: editForm.moneda
+    };
+
+    try {
+      setIsUpdating(true);
+
+      const updatedRecord = await updateMovement(editingRecord.id, updatedPayload);
+
+      // Reemplaza en pantalla el registro actualizado sin recargar toda la página.
+      setRecords((currentRecords) =>
+        currentRecords.map((record) =>
+          record.id === updatedRecord.id ? updatedRecord : record
+        )
+      );
+
+      setToast({
+        title: 'Movimiento actualizado',
+        text: 'Los cambios se guardaron correctamente en PostgreSQL.',
+        type: 'success'
+      });
+
+      closeEditModal();
+    } catch (error) {
+      setToast({
+        title: 'Error',
+        text: error.message,
+        type: 'error'
+      });
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  // Elimina el movimiento seleccionado después de confirmar con el usuario.
+  const removeMovement = async (record) => {
+    const confirmed = window.confirm(
+      `¿Seguro que deseas eliminar el movimiento con folio ${record.folio}? Esta acción no se puede deshacer.`
+    );
+
+    if (!confirmed) return;
+
+    try {
+      setDeletingId(record.id);
+
+      await deleteMovement(record.id);
+
+      // Quita de la tabla el registro eliminado sin recargar toda la página.
+      setRecords((currentRecords) =>
+        currentRecords.filter((currentRecord) => currentRecord.id !== record.id)
+      );
+
+      setToast({
+        title: 'Movimiento eliminado',
+        text: 'El registro se eliminó correctamente de PostgreSQL.',
+        type: 'success'
+      });
+    } catch (error) {
+      setToast({
+        title: 'Error',
+        text: error.message,
+        type: 'error'
+      });
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   // Aplica los filtros actuales al listado.
   const applyFilters = () => {
     setAppliedFilters({
@@ -282,7 +435,7 @@ function Reports() {
         <section className="page-header screenshot-style-header">
           <div>
             <h1>Reportes de Movimientos</h1>
-            <p>Filtra por semana, nombre, folio y cualquier campo visible en la tabla.</p>
+            <p>Filtra, modifica o elimina movimientos generados desde la tabla general.</p>
           </div>
         </section>
 
@@ -448,31 +601,33 @@ function Reports() {
                   <th>Descripción</th>
                   <th>Cantidad</th>
                   <th>Moneda</th>
+                  <th>Acciones</th>
                 </tr>
               </thead>
 
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', padding: '18px' }}>
+                    <td colSpan="9" style={{ textAlign: 'center', padding: '18px' }}>
                       Cargando reportes desde PostgreSQL...
                     </td>
                   </tr>
                 ) : apiError ? (
                   <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', padding: '18px' }}>
+                    <td colSpan="9" style={{ textAlign: 'center', padding: '18px' }}>
                       {apiError}
                     </td>
                   </tr>
                 ) : filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan="8" style={{ textAlign: 'center', padding: '18px' }}>
+                    <td colSpan="9" style={{ textAlign: 'center', padding: '18px' }}>
                       No se encontraron registros para los filtros aplicados.
                     </td>
                   </tr>
                 ) : (
                   filteredRows.map((record) => {
                     const info = getISOWeekInfo(record.fecha);
+                    const isDeletingCurrentRow = deletingId === record.id;
 
                     return (
                       <tr key={record.id}>
@@ -488,6 +643,33 @@ function Reports() {
                         <td>{record.descripcion}</td>
                         <td>{formatAmount(record.cantidad)}</td>
                         <td>{record.moneda}</td>
+                        <td>
+                          <div className="report-row-actions">
+                            <button
+                              type="button"
+                              className="btn-icon-action btn-edit-row"
+                              onClick={() => openEditModal(record)}
+                              disabled={Boolean(deletingId)}
+                              title="Modificar movimiento"
+                            >
+                              <span className="material-icons-outlined">edit</span>
+                              Editar
+                            </button>
+
+                            <button
+                              type="button"
+                              className="btn-icon-action btn-delete-row"
+                              onClick={() => removeMovement(record)}
+                              disabled={Boolean(deletingId)}
+                              title="Eliminar movimiento"
+                            >
+                              <span className="material-icons-outlined">
+                                {isDeletingCurrentRow ? 'hourglass_top' : 'delete'}
+                              </span>
+                              {isDeletingCurrentRow ? 'Eliminando' : 'Eliminar'}
+                            </button>
+                          </div>
+                        </td>
                       </tr>
                     );
                   })
@@ -497,6 +679,132 @@ function Reports() {
           </div>
         </section>
       </main>
+
+      {editingRecord && (
+        <div className="report-modal-backdrop" role="presentation">
+          <form className="report-modal-card" onSubmit={saveEditedMovement}>
+            <div className="report-modal-header">
+              <div>
+                <h2>Modificar movimiento</h2>
+                <p>Actualiza la información del folio {editingRecord.folio}.</p>
+              </div>
+
+              <button
+                type="button"
+                className="report-modal-close"
+                onClick={closeEditModal}
+                disabled={isUpdating}
+                aria-label="Cerrar modal"
+              >
+                <span className="material-icons-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="report-modal-grid">
+              <div className="filter-box">
+                <label htmlFor="editTipo">Tipo</label>
+                <select
+                  id="editTipo"
+                  className="filter-control"
+                  value={editForm.tipo}
+                  onChange={(event) => updateEditForm('tipo', event.target.value)}
+                >
+                  <option value="ingreso">Ingresos</option>
+                  <option value="egreso">Egresos</option>
+                </select>
+              </div>
+
+              <div className="filter-box">
+                <label htmlFor="editFecha">Fecha</label>
+                <input
+                  type="date"
+                  id="editFecha"
+                  className="filter-control"
+                  value={editForm.fecha}
+                  onChange={(event) => updateEditForm('fecha', event.target.value)}
+                />
+              </div>
+
+              <div className="filter-box">
+                <label htmlFor="editFolio">Folio</label>
+                <input
+                  type="text"
+                  id="editFolio"
+                  className="filter-control"
+                  value={editForm.folio}
+                  onChange={(event) => updateEditForm('folio', event.target.value)}
+                />
+              </div>
+
+              <div className="filter-box">
+                <label htmlFor="editNombre">Nombre</label>
+                <input
+                  type="text"
+                  id="editNombre"
+                  className="filter-control"
+                  value={editForm.nombre}
+                  onChange={(event) => updateEditForm('nombre', event.target.value)}
+                />
+              </div>
+
+              <div className="filter-box">
+                <label htmlFor="editCantidad">Cantidad</label>
+                <input
+                  type="number"
+                  id="editCantidad"
+                  className="filter-control"
+                  min="0"
+                  step="0.01"
+                  value={editForm.cantidad}
+                  onChange={(event) => updateEditForm('cantidad', event.target.value)}
+                />
+              </div>
+
+              <div className="filter-box">
+                <label htmlFor="editMoneda">Moneda</label>
+                <select
+                  id="editMoneda"
+                  className="filter-control"
+                  value={editForm.moneda}
+                  onChange={(event) => updateEditForm('moneda', event.target.value)}
+                >
+                  <option value="">Selecciona una moneda</option>
+                  <option value="Pesos">Pesos</option>
+                  <option value="Dólares">Dólares</option>
+                </select>
+              </div>
+
+              <div className="filter-box report-modal-wide">
+                <label htmlFor="editDescripcion">Descripción</label>
+                <textarea
+                  id="editDescripcion"
+                  className="filter-control report-modal-textarea"
+                  value={editForm.descripcion}
+                  onChange={(event) => updateEditForm('descripcion', event.target.value)}
+                />
+              </div>
+            </div>
+
+            <div className="report-modal-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={closeEditModal}
+                disabled={isUpdating}
+              >
+                Cancelar
+              </button>
+
+              <button type="submit" className="btn btn-dark" disabled={isUpdating}>
+                <span className="material-icons-outlined">
+                  {isUpdating ? 'hourglass_top' : 'save'}
+                </span>
+                {isUpdating ? 'Guardando...' : 'Guardar cambios'}
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
 
       {toast && (
         <div className={`toast-message ${toast.type} show`}>

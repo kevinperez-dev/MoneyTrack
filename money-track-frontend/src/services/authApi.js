@@ -1,23 +1,18 @@
 // Archivo: src/services/authApi.js
-// Propósito: centralizar las peticiones de autenticación hacia el backend de MoneyTrack
+// Propósito: centralizar las peticiones de autenticación hacia el backend
 
-// URL base de la API.
-// En local usa localhost.
-// En producción Vercel debe usar VITE_API_URL=https://moneytrack-api.onrender.com/api
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
-// Función para hacer peticiones fetch con tiempo límite.
-// Esto evita que el login se quede esperando indefinidamente si el backend no responde.
-async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
+// Función para hacer peticiones con tiempo límite
+async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
   const controller = new AbortController();
 
-  // Temporizador que cancela la petición si tarda demasiado
+  // Cancela la petición si tarda demasiado
   const timeoutId = setTimeout(() => {
     controller.abort();
   }, timeoutMs);
 
   try {
-    // Ejecutar la petición HTTP con soporte de cancelación
     const response = await fetch(url, {
       ...options,
       signal: controller.signal,
@@ -25,27 +20,21 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 8000) {
 
     return response;
   } catch (error) {
-    // Mostrar un error claro si la petición fue cancelada por tardar demasiado
     if (error.name === 'AbortError') {
-      throw new Error(
-        `El backend tardó demasiado en responder. Backend configurado: ${API_BASE_URL}`,
-        {
-          cause: error,
-        },
-      );
+      throw new Error(`El backend tardó demasiado en responder: ${API_BASE_URL}`, {
+        cause: error,
+      });
     }
 
-    // Mostrar un error claro si no se pudo conectar al backend configurado
     throw new Error(`No se pudo conectar con el backend configurado: ${API_BASE_URL}`, {
       cause: error,
     });
   } finally {
-    // Limpiar el temporizador para evitar procesos pendientes
     clearTimeout(timeoutId);
   }
 }
 
-// Función para leer respuestas JSON sin romper la app si el backend responde vacío
+// Lee la respuesta JSON de forma segura
 async function readJsonResponse(response) {
   try {
     return await response.json();
@@ -54,7 +43,7 @@ async function readJsonResponse(response) {
   }
 }
 
-// Función para iniciar sesión contra el backend
+// Iniciar sesión
 export async function loginUser(username, password) {
   const response = await fetchWithTimeout(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
@@ -69,7 +58,6 @@ export async function loginUser(username, password) {
 
   const data = await readJsonResponse(response);
 
-  // Si el backend responde error, mostrar el mensaje enviado por la API
   if (!response.ok) {
     throw new Error(data.message || 'Usuario o contraseña incorrectos.');
   }
@@ -77,7 +65,7 @@ export async function loginUser(username, password) {
   return data;
 }
 
-// Función para validar la sesión actual usando el token guardado
+// Obtener sesión actual
 export async function getCurrentSession() {
   const token = localStorage.getItem('pegasoToken');
 
@@ -89,7 +77,6 @@ export async function getCurrentSession() {
 
   const data = await readJsonResponse(response);
 
-  // Si el token no es válido, mostrar error de sesión
   if (!response.ok) {
     throw new Error(data.message || 'Sesión inválida.');
   }
