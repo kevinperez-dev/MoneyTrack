@@ -1,8 +1,5 @@
-// Archivo: src/pages/Dashboard.jsx
-// Propósito: vista principal de movimientos conectada con Express/PostgreSQL.
-
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '../components/Header.jsx';
 
 import {
@@ -45,15 +42,97 @@ const modeConfig = {
   }
 };
 
+const CURRENCY_OPTIONS = [
+  {
+    value: 'Pesos',
+    label: 'Pesos',
+    symbol: '$',
+    helper: 'MXN'
+  },
+  {
+    value: 'Dolares',
+    label: 'Dólares',
+    symbol: 'US$',
+    helper: 'USD'
+  }
+];
+
+// Normaliza el nombre de moneda para comparar pesos y dólares sin depender de acentos.
+function normalizeCurrencyName(currency) {
+  return String(currency || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+// Revisa si una opción de moneda debe mostrarse marcada.
+function isCurrencySelected(currentCurrency, optionCurrency) {
+  return normalizeCurrencyName(currentCurrency) === normalizeCurrencyName(optionCurrency);
+}
+
+// Da formato a los importes usando el símbolo correcto según la moneda seleccionada.
+function formatMoneyByCurrency(amount, currency) {
+  const normalizedCurrency = normalizeCurrencyName(currency);
+
+  const symbol = normalizedCurrency.includes('dolar') || normalizedCurrency.includes('usd') ? 'US$' : '$';
+  return `${symbol}${formatAmount(amount || 0)}`;
+}
+
+// Identifica si el movimiento pertenece a pesos o dólares para separarlo en columnas.
+function isDollarCurrency(currency) {
+  const normalizedCurrency = normalizeCurrencyName(currency);
+  return normalizedCurrency.includes('dolar') || normalizedCurrency.includes('usd');
+}
+
+// Muestra el monto solo en la columna de la moneda correspondiente.
+function getAmountForCurrencyColumn(record, targetCurrency) {
+  const shouldShowAmount =
+    targetCurrency === 'Dólares'
+      ? isDollarCurrency(record.moneda)
+      : !isDollarCurrency(record.moneda);
+
+  return shouldShowAmount ? formatMoneyByCurrency(record.cantidad, targetCurrency) : '—';
+}
+
+// Convierte una fecha YYYY-MM-DD a formato corto, por ejemplo 04/may.
+function formatShortDate(dateValue) {
+  if (!dateValue) return '';
+
+  const [year, month, day] = String(dateValue).split('-');
+
+  const monthNames = {
+    '01': 'ene',
+    '02': 'feb',
+    '03': 'mar',
+    '04': 'abr',
+    '05': 'may',
+    '06': 'jun',
+    '07': 'jul',
+    '08': 'ago',
+    '09': 'sep',
+    '10': 'oct',
+    '11': 'nov',
+    '12': 'dic'
+  };
+
+  if (!year || !month || !day || !monthNames[month]) {
+    return dateValue;
+  }
+
+  return `${day}/${monthNames[month]}`;
+}
+
 function Dashboard() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const labelSheetRef = useRef(null);
 
   // Registros principales cargados desde PostgreSQL.
   const [records, setRecords] = useState([]);
 
   // Estados visuales y de operación.
-  const [type, setType] = useState('ingreso');
+  const initialMovementType = searchParams.get('tipo') === 'egreso' ? 'egreso' : 'ingreso';
+  const [type, setType] = useState(initialMovementType);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [apiError, setApiError] = useState('');
@@ -91,7 +170,6 @@ function Dashboard() {
     return [currentYear - 1, currentYear];
   }, []);
 
-  // Semanas visibles sin mostrar semanas futuras.
   // Semanas visibles sin mostrar semanas futuras.
   // Se calculan según el periodo seleccionado y los registros cargados desde PostgreSQL.
   const weeks = useMemo(() => {
@@ -291,13 +369,13 @@ function Dashboard() {
       const info = getISOWeekInfo(record.fecha);
 
       return [
-        record.fecha,
-        getWeekLabel(info.year, info.week),
+        info.week,
         record.folio,
+        formatShortDate(record.fecha),
         record.nombre,
         record.descripcion,
-        formatAmount(record.cantidad),
-        record.moneda
+        isDollarCurrency(record.moneda) ? formatMoneyByCurrency(record.cantidad, 'Dólares') : '',
+        isDollarCurrency(record.moneda) ? '' : formatMoneyByCurrency(record.cantidad, 'Pesos')
       ];
     });
 
@@ -305,7 +383,7 @@ function Dashboard() {
       rows: excelRows,
       sheetName: `Semana_${selectedWeek}`,
       fileName: `movimientos_${config.pillText.toLowerCase()}_${period}_semana_${selectedWeek}`,
-      headers: ['Fecha', 'Semana', 'Folio', 'Nombre', 'Descripción', 'Cantidad', 'Moneda'],
+      headers: ['Sem', 'Folio', 'Fecha', 'Nombre', 'Concepto', 'Dólares', 'Pesos'],
       headerColor: config.excelHeaderColor
     });
 
@@ -317,8 +395,6 @@ function Dashboard() {
   };
 
   // Imprime la vista previa del movimiento.
-  // Imprime la vista previa del movimiento con estilos propios.
-  // Esto evita que en Vercel se pierda el formato por no encontrar /src/styles/pegaso.css.
   const printMovementPreview = () => {
     if (!labelSheetRef.current) {
       setToast({
@@ -404,11 +480,11 @@ function Dashboard() {
       gap: 10px;
     }
 
-.label-brand img {
-  width: 62px;
-  height: 62px;
-  object-fit: contain;
-}
+    .label-brand img {
+      width: 48px;
+      height: 48px;
+      object-fit: contain;
+    }
 
     .label-brand h3 {
       font-size: 1rem;
@@ -692,17 +768,26 @@ function Dashboard() {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="moneda">Moneda *</label>
-                  <select
-                    id="moneda"
-                    required
-                    value={form.moneda}
-                    onChange={(event) => updateForm('moneda', event.target.value)}
-                  >
-                    <option value="" disabled>Selecciona una moneda</option>
-                    <option value="Pesos">Pesos</option>
-                    <option value="Dólares">Dólares</option>
-                  </select>
+                  <label>Moneda *</label>
+
+                  <div className="currency-choice-group" role="radiogroup" aria-label="Seleccionar moneda">
+                    {CURRENCY_OPTIONS.map((currency) => (
+                      <button
+                        key={currency.value}
+                        type="button"
+                        className={`currency-choice ${isCurrencySelected(form.moneda, currency.value) ? 'selected' : ''}`}
+                        onClick={() => updateForm('moneda', currency.value)}
+                        aria-pressed={isCurrencySelected(form.moneda, currency.value)}
+                      >
+                        <span className="currency-choice-symbol">{currency.symbol}</span>
+                        <span className="currency-choice-text">
+                          <strong>{currency.label}</strong>
+                          <small>{currency.helper}</small>
+                        </span>
+                        <span className="material-icons-outlined currency-choice-check">check_circle</span>
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -742,7 +827,7 @@ function Dashboard() {
                   <div className="label-brand">
                     <img src="/snoopy-laptop-removebg-preview.png" alt="alt" />
                     <div>
-                      <h3>ITT</h3>
+                      <h3>Snoopy Prokect</h3>
                       <p>{config.previewText}</p>
                     </div>
                   </div>
@@ -783,7 +868,7 @@ function Dashboard() {
                   <div className="label-row">
                     <div className="label-field">
                       <span className="field-title">Cantidad</span>
-                      <span>{formatAmount(form.cantidad || 0)}</span>
+                      <span>{formatMoneyByCurrency(form.cantidad || 0, form.moneda)}</span>
                     </div>
 
                     <div className="label-field">
@@ -901,13 +986,13 @@ function Dashboard() {
             <table className="history-table">
               <thead>
                 <tr>
-                  <th>Fecha</th>
-                  <th>Semana</th>
+                  <th>Sem</th>
                   <th>Folio</th>
+                  <th>Fecha</th>
                   <th>Nombre</th>
-                  <th>Descripción</th>
-                  <th>Cantidad</th>
-                  <th>Moneda</th>
+                  <th>Concepto</th>
+                  <th>Dólares</th>
+                  <th>Pesos</th>
                 </tr>
               </thead>
 
@@ -939,13 +1024,13 @@ function Dashboard() {
                         key={record.id}
                         className={record.id === lastCreatedId ? 'row-highlight' : ''}
                       >
-                        <td>{record.fecha}</td>
-                        <td>{getWeekLabel(info.year, info.week)}</td>
+                        <td>{info.week}</td>
                         <td>{record.folio}</td>
+                        <td>{formatShortDate(record.fecha)}</td>
                         <td>{record.nombre}</td>
                         <td>{record.descripcion}</td>
-                        <td>{formatAmount(record.cantidad)}</td>
-                        <td>{record.moneda}</td>
+                        <td className="money-cell">{getAmountForCurrencyColumn(record, 'Dólares')}</td>
+                        <td className="money-cell">{getAmountForCurrencyColumn(record, 'Pesos')}</td>
                       </tr>
                     );
                   })

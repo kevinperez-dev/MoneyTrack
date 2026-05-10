@@ -1,5 +1,5 @@
 -- Archivo: src/database/schema.sql
--- Propósito: crear las tablas iniciales del sistema Pegasso Packing
+-- Propósito: crear las tablas iniciales del sistema MoneyTrack
 
 CREATE TABLE IF NOT EXISTS users (
     id SERIAL PRIMARY KEY,
@@ -11,13 +11,13 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE TABLE IF NOT EXISTS movements (
     id SERIAL PRIMARY KEY,
-    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('ingreso', 'egreso')),
+    tipo VARCHAR(20) NOT NULL CHECK (tipo IN ('ingreso', 'egreso', 'cancelado')),
     fecha DATE NOT NULL,
     folio VARCHAR(30) NOT NULL UNIQUE,
     nombre VARCHAR(150) NOT NULL,
     descripcion TEXT NOT NULL,
     cantidad NUMERIC(12, 2) NOT NULL CHECK (cantidad > 0),
-    moneda VARCHAR(20) NOT NULL CHECK (moneda IN ('Pesos', 'Dólares')),
+    moneda VARCHAR(20) NOT NULL CHECK (moneda IN ('Pesos', 'Dolares', 'Dólares')),
     created_by INTEGER REFERENCES users(id),
     created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP
 );

@@ -629,12 +629,12 @@ body.modo-egreso .report-table thead th {
   gap: 10px;
 }
 
-/* Logo del ticket en vista previa */
 .label-brand img {
-  width: 62px;
-  height: 62px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
 }
+
 .label-brand h3 {
   font-size: 1rem;
   font-weight: 700;
@@ -865,44 +865,107 @@ body.modo-egreso .report-table thead th {
   width: 100%;
 }
 
+/* =========================================================
+   TABLAS DE HISTORIAL Y REPORTES
+   Propósito: centrar las tablas y hacer más claras sus celdas.
+========================================================= */
 .table-wrapper {
-  padding: 12px 18px 0 18px;
+  width: 100%;
+  padding: 16px 18px 4px 18px;
   overflow-x: auto;
+  display: flex;
+  justify-content: center;
 }
 
 .history-table,
 .report-table {
   width: 100%;
-  border-collapse: collapse;
   min-width: 980px;
+  margin: 0 auto;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: auto;
+  background: #ffffff;
+  border: 1px solid #d7dde4;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(16, 24, 40, 0.06);
 }
 
 .history-table thead th,
 .report-table thead th {
-  text-align: left;
-  padding: 12px 10px;
-  font-size: 0.86rem;
-  font-weight: 700;
-  border: 1px solid #a8d5d8;
+  text-align: center;
+  vertical-align: middle;
+  padding: 13px 12px;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border-right: 1px solid rgba(17, 17, 17, 0.12);
+  border-bottom: 1px solid rgba(17, 17, 17, 0.16);
+  white-space: nowrap;
+}
+
+.history-table thead th:last-child,
+.report-table thead th:last-child,
+.history-table tbody td:last-child,
+.report-table tbody td:last-child {
+  border-right: none;
 }
 
 .history-table tbody td,
 .report-table tbody td {
-  padding: 11px 10px;
-  border: 1px solid #e3e3e3;
+  padding: 13px 12px;
+  border-right: 1px solid #e1e6ec;
+  border-bottom: 1px solid #e1e6ec;
   font-size: 0.9rem;
-  color: #333333;
+  color: #263238;
   background: #ffffff;
+  text-align: center;
+  vertical-align: middle;
+  line-height: 1.35;
+}
+
+.history-table tbody tr:last-child td,
+.report-table tbody tr:last-child td {
+  border-bottom: none;
 }
 
 .history-table tbody tr:nth-child(even) td,
 .report-table tbody tr:nth-child(even) td {
-  background: #fafafa;
+  background: #f8fafc;
 }
 
 .history-table tbody tr:hover td,
 .report-table tbody tr:hover td {
-  background: #f7f6ef;
+  background: #fff9e8;
+}
+
+/* Propósito: dar mejor lectura a columnas con texto largo. */
+.report-table tbody td:nth-child(4),
+.report-table tbody td:nth-child(5),
+.history-table tbody td:nth-child(4),
+.history-table tbody td:nth-child(5) {
+  text-align: left;
+  max-width: 320px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Propósito: alinear importes de forma uniforme y fácil de comparar. */
+.report-table tbody td:nth-child(6),
+.history-table tbody td:nth-child(6) {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+/* Propósito: centrar los mensajes de carga, error o tabla vacía. */
+.report-table tbody td[colspan],
+.history-table tbody td[colspan] {
+  text-align: center;
+  color: #667085;
+  font-weight: 600;
 }
 
 .tipo-badge {
@@ -1368,7 +1431,7 @@ body.modo-egreso .report-table thead th {
 
 .home-summary-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(180px, 1fr));
+  grid-template-columns: repeat(4, minmax(220px, 1fr));
   gap: 14px;
   margin-bottom: 20px;
 }
@@ -1385,20 +1448,83 @@ body.modo-egreso .report-table thead th {
   display: block;
   font-size: 0.78rem;
   color: #667085;
-  margin-bottom: 6px;
+  margin-bottom: 12px;
   text-transform: uppercase;
   letter-spacing: 0.4px;
+  font-weight: 800;
 }
 
-.home-summary-card strong {
-  display: block;
-  font-size: 1.35rem;
-  color: #111827;
+.home-summary-card.income {
+  border-color: #b7ebc4;
+}
+
+.home-summary-card.expense {
+  border-color: #ffd2d6;
 }
 
 .home-summary-card.final {
   border-color: #b89645;
   background: #fffaf0;
+}
+
+.home-currency-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.home-currency-summary div {
+  min-width: 0;
+  padding: 10px 12px;
+  background: #f8fafc;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+}
+
+.home-summary-card.income .home-currency-summary div {
+  background: #ecfdf3;
+  border-color: #c7f0d2;
+}
+
+.home-summary-card.expense .home-currency-summary div {
+  background: #fff1f3;
+  border-color: #ffd5da;
+}
+
+.home-summary-card.final .home-currency-summary div {
+  background: #ffffff;
+  border-color: #ead7a8;
+}
+
+.home-currency-summary small {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.74rem;
+  font-weight: 800;
+  color: #667085;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.home-currency-summary strong {
+  display: block;
+  overflow-wrap: anywhere;
+  font-size: 1.14rem;
+  font-weight: 900;
+  color: #111827;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-summary-card.income .home-currency-summary strong {
+  color: #027a48;
+}
+
+.home-summary-card.expense .home-currency-summary strong {
+  color: #b42318;
+}
+
+.home-summary-card.final .home-currency-summary strong {
+  color: #111827;
 }
 
 .home-excel-card {
@@ -1413,95 +1539,179 @@ body.modo-egreso .report-table thead th {
 
 .home-filters-row {
   display: grid;
-  grid-template-columns: 180px 280px 240px;
+  grid-template-columns: 180px 280px 220px 220px;
   gap: 14px;
   margin-bottom: 16px;
 }
 
+.home-table-wrapper {
+  padding-top: 20px;
+}
+
+/* =========================================================
+   TABLA TIPO EXCEL DEL INICIO
+   Propósito: separar ingresos, egresos y saldos por pesos y dólares.
+========================================================= */
 .home-excel-table {
   width: 100%;
-  border-collapse: collapse;
+  min-width: 1180px;
+  margin: 0 auto;
+  border-collapse: separate;
+  border-spacing: 0;
   background: #ffffff;
   font-size: 0.9rem;
+  border: 1px solid #d7dde4;
+  border-radius: 12px;
+  overflow: hidden;
+  box-shadow: 0 10px 24px rgba(16, 24, 40, 0.05);
 }
 
 .home-excel-table th,
 .home-excel-table td {
-  border: 1px solid #cfd8dc;
-  padding: 9px 10px;
+  border-right: 1px solid #d7dde4;
+  border-bottom: 1px solid #d7dde4;
+  padding: 11px 12px;
   vertical-align: middle;
+  text-align: center;
+}
+
+.home-excel-table th:last-child,
+.home-excel-table td:last-child {
+  border-right: none;
+}
+
+.home-excel-table tbody tr:last-child td,
+.home-excel-table tfoot tr:last-child td {
+  border-bottom: none;
 }
 
 .home-excel-table thead th {
   background: #d9eef3;
   color: #111827;
-  font-weight: 700;
+  font-weight: 900;
   text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.home-excel-table thead .home-currency-head th {
+  font-size: 0.78rem;
+  background: #eef8fb;
+  color: #475467;
+}
+
+.home-excel-table .home-th-income {
+  background: #dff7e7;
+  color: #027a48;
+}
+
+.home-excel-table .home-th-expense {
+  background: #ffe4e8;
+  color: #b42318;
+}
+
+.home-excel-table .home-th-balance {
+  background: #fff3d4;
+  color: #7a6200;
 }
 
 .home-excel-table tbody td:nth-child(4),
 .home-excel-table tbody td:nth-child(5),
 .home-excel-table tbody td:nth-child(6),
+.home-excel-table tbody td:nth-child(7),
+.home-excel-table tbody td:nth-child(8),
+.home-excel-table tbody td:nth-child(9),
 .home-excel-table tfoot td:nth-child(4),
 .home-excel-table tfoot td:nth-child(5),
-.home-excel-table tfoot td:nth-child(6) {
+.home-excel-table tfoot td:nth-child(6),
+.home-excel-table tfoot td:nth-child(7),
+.home-excel-table tfoot td:nth-child(8),
+.home-excel-table tfoot td:nth-child(9) {
   text-align: right;
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
 }
 
 .home-excel-table tbody td:nth-child(3) {
-  min-width: 360px;
+  min-width: 340px;
+  text-align: left;
 }
 
-.home-row-initial {
+.home-row-initial td {
   background: #f8fafc;
-  font-weight: 700;
+  font-weight: 800;
 }
 
-.home-row-abono td:nth-child(5) {
+.home-row-ingreso td:nth-child(4),
+.home-row-ingreso td:nth-child(5) {
   background: #ecfdf3;
   color: #027a48;
-  font-weight: 700;
+  font-weight: 800;
 }
 
-.home-row-cargo td:nth-child(4) {
+.home-row-egreso td:nth-child(6),
+.home-row-egreso td:nth-child(7) {
   background: #fff1f3;
   color: #b42318;
-  font-weight: 700;
+  font-weight: 800;
+}
+
+.home-excel-table tbody td:nth-child(8),
+.home-excel-table tbody td:nth-child(9) {
+  background: #fffaf0;
+  font-weight: 800;
 }
 
 .home-excel-table tfoot td {
   background: #f3f4f6;
-  font-weight: 800;
+  font-weight: 900;
+}
+
+.home-excel-table tfoot td:nth-child(4),
+.home-excel-table tfoot td:nth-child(5) {
+  color: #027a48;
+}
+
+.home-excel-table tfoot td:nth-child(6),
+.home-excel-table tfoot td:nth-child(7) {
+  color: #b42318;
+}
+
+.home-excel-table tfoot td:nth-child(8),
+.home-excel-table tfoot td:nth-child(9) {
+  color: #111827;
 }
 
 .home-empty-row {
-  text-align: center;
+  text-align: center !important;
   padding: 18px !important;
   color: #667085;
 }
 
-@media (max-width: 980px) {
+@media (max-width: 1180px) {
   .home-summary-grid {
-    grid-template-columns: repeat(2, minmax(180px, 1fr));
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 
   .home-filters-row {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 }
 
-@media (max-width: 560px) {
-  .home-summary-grid {
+@media (max-width: 640px) {
+  .home-summary-grid,
+  .home-filters-row {
     grid-template-columns: 1fr;
   }
 }
 /* =========================================================
    ACCIONES DE REPORTES
 ========================================================= */
+/* Propósito: centrar los botones de editar/eliminar dentro de la celda. */
 .report-row-actions {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   min-width: 190px;
 }
@@ -1667,4 +1877,300 @@ body.modo-egreso .report-table thead th {
     align-items: stretch;
     min-width: 130px;
   }
+}
+
+/* =========================================================
+   SECCIONES DE REPORTES: INGRESOS / EGRESOS
+========================================================= */
+.report-section-tabs {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(220px, 1fr));
+  gap: 14px;
+  margin-bottom: 16px;
+}
+
+.report-section-tab {
+  border: 1px solid #e2e2e2;
+  background: #ffffff;
+  border-radius: 16px;
+  min-height: 78px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  cursor: pointer;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.04);
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background 0.15s ease;
+}
+
+.report-section-tab:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 14px 28px rgba(0, 0, 0, 0.08);
+}
+
+.report-section-tab .material-icons-outlined {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24px;
+  background: #f4f4f4;
+  color: #3a3a3a;
+}
+
+.report-section-tab-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  text-align: left;
+}
+
+.report-section-tab-text strong {
+  font-size: 1rem;
+  color: #1f1f1f;
+}
+
+.report-section-tab-text small {
+  font-size: 0.82rem;
+  color: #777777;
+}
+
+.report-section-tab.active {
+  border-color: var(--color-gold-soft);
+  box-shadow: 0 16px 36px rgba(184, 150, 69, 0.16);
+}
+
+body.modo-ingreso .report-section-tab.active {
+  background: linear-gradient(135deg, #ffffff 0%, #ecfcfd 100%);
+}
+
+body.modo-egreso .report-section-tab.active {
+  background: linear-gradient(135deg, #ffffff 0%, #fff8df 100%);
+}
+
+body.modo-ingreso .report-section-tab.active .material-icons-outlined {
+  background: var(--color-ingreso-bg);
+  color: var(--color-ingreso-text);
+}
+
+body.modo-egreso .report-section-tab.active .material-icons-outlined {
+  background: var(--color-egreso-bg);
+  color: var(--color-egreso-text);
+}
+
+.report-section-description {
+  color: #666666;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.reports-filters-separated {
+  grid-template-columns: repeat(4, minmax(140px, 1fr));
+}
+
+@media (max-width: 768px) {
+  .report-section-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  .report-section-tab {
+    min-height: 70px;
+  }
+}
+
+/* =========================================================
+   AJUSTE FINAL DE TABLAS Y SELECTOR DE MONEDA
+   Propósito: mantener títulos, registros e importes centrados.
+========================================================= */
+.history-table th,
+.history-table td,
+.report-table th,
+.report-table td,
+.home-excel-table th,
+.home-excel-table td {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+.history-table tbody td,
+.report-table tbody td,
+.home-excel-table tbody td,
+.home-excel-table tfoot td {
+  text-align: center !important;
+}
+
+.history-table tbody td:nth-child(4),
+.history-table tbody td:nth-child(5),
+.report-table tbody td:nth-child(4),
+.report-table tbody td:nth-child(5),
+.home-excel-table tbody td:nth-child(3) {
+  text-align: center !important;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.money-cell,
+.currency-cell,
+.history-table tbody td:nth-child(6),
+.report-table tbody td:nth-child(6),
+.home-excel-table tbody td:nth-child(4),
+.home-excel-table tbody td:nth-child(5),
+.home-excel-table tbody td:nth-child(6),
+.home-excel-table tbody td:nth-child(7),
+.home-excel-table tbody td:nth-child(8),
+.home-excel-table tbody td:nth-child(9),
+.home-excel-table tfoot td:nth-child(4),
+.home-excel-table tfoot td:nth-child(5),
+.home-excel-table tfoot td:nth-child(6),
+.home-excel-table tfoot td:nth-child(7),
+.home-excel-table tfoot td:nth-child(8),
+.home-excel-table tfoot td:nth-child(9) {
+  text-align: center !important;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.currency-choice-group {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.currency-choice {
+  min-height: 58px;
+  border: 1px solid #d5d9e0;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  color: #202020;
+  cursor: pointer;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease, background 0.18s ease, transform 0.15s ease;
+  text-align: left;
+}
+
+.currency-choice:hover {
+  border-color: var(--color-gold);
+  background: #fffaf0;
+  transform: translateY(-1px);
+}
+
+.currency-choice.selected {
+  border-color: var(--color-gold);
+  background: #fff7df;
+  box-shadow: 0 0 0 3px rgba(184, 150, 69, 0.18);
+}
+
+.currency-choice-symbol {
+  width: 34px;
+  height: 34px;
+  min-width: 34px;
+  border-radius: 50%;
+  background: #f3f4f6;
+  color: #111827;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 900;
+  font-size: 0.82rem;
+}
+
+.currency-choice.selected .currency-choice-symbol {
+  background: var(--color-black);
+  color: #ffffff;
+}
+
+.currency-choice-text {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  line-height: 1.1;
+  min-width: 0;
+}
+
+.currency-choice-text strong {
+  font-size: 0.9rem;
+  font-weight: 800;
+}
+
+.currency-choice-text small {
+  font-size: 0.73rem;
+  color: #667085;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.currency-choice-check {
+  margin-left: auto;
+  font-size: 20px;
+  color: var(--color-gold);
+  opacity: 0;
+  transition: opacity 0.18s ease;
+}
+
+.currency-choice.selected .currency-choice-check {
+  opacity: 1;
+}
+
+@media (max-width: 520px) {
+  .currency-choice-group {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   CANCELACIÓN LÓGICA
+   Propósito: marcar visualmente los movimientos cancelados sin eliminarlos.
+========================================================= */
+body.modo-cancelado .history-table thead th,
+body.modo-cancelado .report-table thead th {
+  background: #fca5a5;
+  color: #7f1d1d;
+}
+
+.tipo-badge.cancelado {
+  background: #fee2e2;
+  color: #991b1b;
+  border: 1px solid #fecaca;
+}
+
+.tipo-badge.ingreso {
+  background: #dcfce7;
+  color: #166534;
+  border: 1px solid #bbf7d0;
+}
+
+.tipo-badge.egreso {
+  background: #fef3c7;
+  color: #92400e;
+  border: 1px solid #fde68a;
+}
+
+.report-row-cancelado td {
+  background: #fff1f2 !important;
+  color: #991b1b !important;
+  border-color: #fecdd3 !important;
+}
+
+.report-row-cancelado:hover td {
+  background: #ffe4e6 !important;
+}
+
+.report-row-cancelado .money-cell {
+  color: #991b1b !important;
+  font-weight: 800;
+}
+
+.report-row-cancelado .btn-edit-row,
+.report-row-cancelado .btn-delete-row {
+  opacity: 0.55;
 }

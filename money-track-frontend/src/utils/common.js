@@ -173,30 +173,48 @@ export const DEFAULT_RECORDS = [
   },
 ];
 
-// Verifica si hay sesión activa
+// Verifica si hay sesión activa en el mismo almacenamiento usado por Login.jsx.
 export function isAuthenticated() {
+  const localAuth = localStorage.getItem(STORAGE_KEYS.auth) === '1';
+  const localToken = Boolean(localStorage.getItem(STORAGE_KEYS.token));
+
+  // Propósito: mantener compatibilidad por si quedaron datos viejos en sessionStorage.
+  const sessionAuth = sessionStorage.getItem(STORAGE_KEYS.auth) === '1';
+  const sessionToken = Boolean(sessionStorage.getItem(STORAGE_KEYS.token));
+
+  return (localAuth && localToken) || (sessionAuth && sessionToken);
+}
+
+// Guarda la sesión completa después de iniciar sesión correctamente.
+export function setLoginSession(user, token = '', role = '') {
+  localStorage.setItem(STORAGE_KEYS.auth, '1');
+  localStorage.setItem(STORAGE_KEYS.user, user || '');
+  localStorage.setItem(STORAGE_KEYS.token, token || '');
+  localStorage.setItem(STORAGE_KEYS.role, role || '');
+}
+
+// Obtiene usuario actual para mostrarlo en el header.
+export function getCurrentUser() {
   return (
-    localStorage.getItem(STORAGE_KEYS.auth) === '1' &&
-    Boolean(localStorage.getItem(STORAGE_KEYS.token))
+    localStorage.getItem(STORAGE_KEYS.user) ||
+    sessionStorage.getItem(STORAGE_KEYS.user) ||
+    ''
   );
 }
 
-export function setLoginSession(user) {
-  localStorage.setItem(STORAGE_KEYS.auth, '1');
-  localStorage.setItem(STORAGE_KEYS.user, user);
-}
-
-// Obtiene usuario actual
-export function getCurrentUser() {
-  return localStorage.getItem(STORAGE_KEYS.user) || '';
-}
-
-// Cierra sesión
+// Cierra sesión y limpia datos nuevos y datos viejos de sesión.
 export function logoutSession() {
   localStorage.removeItem(STORAGE_KEYS.auth);
   localStorage.removeItem(STORAGE_KEYS.user);
   localStorage.removeItem(STORAGE_KEYS.token);
   localStorage.removeItem(STORAGE_KEYS.role);
+  localStorage.removeItem('pegasoLastActivity');
+
+  sessionStorage.removeItem(STORAGE_KEYS.auth);
+  sessionStorage.removeItem(STORAGE_KEYS.user);
+  sessionStorage.removeItem(STORAGE_KEYS.token);
+  sessionStorage.removeItem(STORAGE_KEYS.role);
+  sessionStorage.removeItem('pegasoLastActivity');
 }
 
 export function loadRecords() {

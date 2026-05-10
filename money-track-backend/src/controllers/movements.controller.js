@@ -4,10 +4,31 @@
 const pool = require('../config/db');
 
 // Tipos válidos que acepta la tabla movements.
-const VALID_TYPES = ['ingreso', 'egreso'];
+const VALID_TYPES = ['ingreso', 'egreso', 'cancelado'];
 
 // Monedas válidas que acepta la tabla movements.
-const VALID_CURRENCIES = ['Pesos', 'Dólares'];
+const VALID_CURRENCIES = ['Pesos', 'Dolares', 'Dólares'];
+
+// Convierte diferentes formas de escribir la moneda al valor exacto que acepta PostgreSQL.
+function normalizeCurrencyValue(value) {
+  const rawCurrency = String(value || '').trim();
+
+  const normalizedCurrency = rawCurrency
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+
+  if (normalizedCurrency === 'pesos' || normalizedCurrency === 'mxn') {
+    return 'Pesos';
+  }
+
+  if (normalizedCurrency === 'dolares' || normalizedCurrency === 'dolares americanos' || normalizedCurrency === 'usd') {
+    return 'Dolares';
+  }
+
+  return rawCurrency;
+}
+
 
 // Normaliza y valida los datos de un movimiento antes de guardar o actualizar.
 function validateMovementPayload(payload) {
@@ -17,7 +38,7 @@ function validateMovementPayload(payload) {
   const nombre = String(payload.nombre || '').trim();
   const descripcion = String(payload.descripcion || '').trim();
   const cantidad = Number(payload.cantidad);
-  const moneda = String(payload.moneda || '').trim();
+  const moneda = normalizeCurrencyValue(payload.moneda);
 
   if (!tipo || !fecha || !folio || !nombre || !descripcion || !payload.cantidad || !moneda) {
     return {
@@ -140,6 +161,7 @@ async function createMovement(req, res) {
     res.status(201).json(result.rows[0]);
   } catch (error) {
     console.error('Error al crear movimiento:', error);
+    console.error('Detalle PostgreSQL:', { code: error.code, constraint: error.constraint, detail: error.detail });
 
     // Error de folio duplicado.
     if (error.code === '23505') {
@@ -204,6 +226,7 @@ async function updateMovement(req, res) {
     res.json(result.rows[0]);
   } catch (error) {
     console.error('Error al actualizar movimiento:', error);
+    console.error('Detalle PostgreSQL:', { code: error.code, constraint: error.constraint, detail: error.detail });
 
     // Error de folio duplicado.
     if (error.code === '23505') {
@@ -225,36 +248,46 @@ async function updateMovement(req, res) {
   }
 }
 
-// Eliminar un movimiento existente desde Reportes.
+// Cancelar un movimiento existente desde Reportes.
+// Propósito: no borrar el registro; solo cambiar tipo = 'cancelado'.
 async function deleteMovement(req, res) {
   try {
     const id = getValidMovementId(req, res);
     if (!id) return undefined;
 
-    // Elimina definitivamente el movimiento de PostgreSQL.
+    // Cancela lógicamente el movimiento y conserva el monto para visibilidad/auditoría.
     const result = await pool.query(
       `
-      DELETE FROM movements
+      UPDATE movements
+      SET tipo = 'cancelado'
       WHERE id = $1
-      RETURNING id, folio
+      RETURNING *
       `,
       [id],
     );
 
     if (result.rowCount === 0) {
       return res.status(404).json({
-        message: 'No se encontró el movimiento que deseas eliminar.',
+        message: 'No se encontró el movimiento que deseas cancelar.',
       });
     }
 
     res.json({
-      message: 'Movimiento eliminado correctamente.',
+      message: 'Movimiento cancelado correctamente.',
       movement: result.rows[0],
     });
   } catch (error) {
-    console.error('Error al eliminar movimiento:', error);
+    console.error('Error al cancelar movimiento:', error);
+    console.error('Detalle PostgreSQL:', { code: error.code, constraint: error.constraint, detail: error.detail });
+
+    if (error.code === '23514') {
+      return res.status(400).json({
+        message: 'La base de datos todavía no permite tipo = cancelado. Ejecuta el script add_tipo_cancelado_drop_estatus.sql en pgAdmin.',
+      });
+    }
+
     res.status(500).json({
-      message: 'Error al eliminar movimiento.',
+      message: 'Error al cancelar movimiento.',
     });
   }
 }

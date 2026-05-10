@@ -67,7 +67,9 @@ export async function loginUser(username, password) {
 
 // Obtener sesión actual
 export async function getCurrentSession() {
-  const token = localStorage.getItem('pegasoToken');
+
+  // Obtiene el token guardado solo para la sesión actual
+const token = sessionStorage.getItem('pegasoToken');
 
   const response = await fetchWithTimeout(`${API_BASE_URL}/auth/me`, {
     headers: {

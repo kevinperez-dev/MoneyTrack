@@ -1,5 +1,5 @@
 // Archivo: src/pages/Reports.jsx
-// Propósito: vista de reportes conectada con Express/PostgreSQL, con edición y eliminación de movimientos.
+// Propósito: vista reutilizable para reportes de ingresos, egresos o cancelados.
 
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -21,8 +21,133 @@ import {
   isAuthenticated
 } from '../utils/common.js';
 
-function Reports() {
+
+const CURRENCY_OPTIONS = [
+  {
+    value: 'Pesos',
+    label: 'Pesos',
+    symbol: '$',
+    helper: 'MXN'
+  },
+  {
+    value: 'Dolares',
+    label: 'Dólares',
+    symbol: 'US$',
+    helper: 'USD'
+  }
+];
+
+// Normaliza el nombre de moneda para comparar pesos y dólares sin depender de acentos.
+function normalizeCurrencyName(currency) {
+  return String(currency || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase();
+}
+
+// Revisa si una opción de moneda debe mostrarse marcada.
+function isCurrencySelected(currentCurrency, optionCurrency) {
+  return normalizeCurrencyName(currentCurrency) === normalizeCurrencyName(optionCurrency);
+}
+
+// Da formato a los importes usando el símbolo correcto según la moneda seleccionada.
+function formatMoneyByCurrency(amount, currency) {
+  const normalizedCurrency = normalizeCurrencyName(currency);
+
+  const symbol = normalizedCurrency.includes('dolar') || normalizedCurrency.includes('usd') ? 'US$' : '$';
+  return `${symbol}${formatAmount(amount || 0)}`;
+}
+
+// Identifica si el movimiento pertenece a pesos o dólares para separarlo en columnas.
+function isDollarCurrency(currency) {
+  const normalizedCurrency = normalizeCurrencyName(currency);
+  return normalizedCurrency.includes('dolar') || normalizedCurrency.includes('usd');
+}
+
+// Muestra el monto solo en la columna de la moneda correspondiente.
+function getAmountForCurrencyColumn(record, targetCurrency) {
+  const shouldShowAmount =
+    targetCurrency === 'Dólares'
+      ? isDollarCurrency(record.moneda)
+      : !isDollarCurrency(record.moneda);
+
+  return shouldShowAmount ? formatMoneyByCurrency(record.cantidad, targetCurrency) : '—';
+}
+
+const REPORT_SECTIONS = {
+  ingreso: {
+    title: 'Reporte de Ingresos',
+    plural: 'Ingresos',
+    singular: 'ingreso',
+    description: 'Consulta, modifica, cancela y exporta únicamente los movimientos de ingreso.',
+    icon: 'south_west',
+    headerColor: '#86DFE6',
+    fileName: 'reporte_ingresos',
+    sheetName: 'Ingresos'
+  },
+  egreso: {
+    title: 'Reporte de Egresos',
+    plural: 'Egresos',
+    singular: 'egreso',
+    description: 'Consulta, modifica, cancela y exporta únicamente los movimientos de egreso.',
+    icon: 'north_east',
+    headerColor: '#F0DC84',
+    fileName: 'reporte_egresos',
+    sheetName: 'Egresos'
+  },
+  cancelado: {
+    title: 'Reporte de Cancelados',
+    plural: 'Cancelados',
+    singular: 'cancelado',
+    description: 'Consulta los movimientos cancelados. Se conservan para visibilidad, pero no cuentan en saldos.',
+    icon: 'block',
+    headerColor: '#FCA5A5',
+    fileName: 'reporte_cancelados',
+    sheetName: 'Cancelados'
+  }
+};
+
+function getSafeReportType(value) {
+  if (value === 'egreso' || value === 'cancelado') return value;
+  return 'ingreso';
+}
+
+// Propósito: convertir una fecha YYYY-MM-DD a formato corto día/mes, por ejemplo 04/may.
+const formatShortDate = (dateValue) => {
+  if (!dateValue) return '';
+
+  // Propósito: separar la fecha manualmente para evitar desfases por zona horaria.
+  const [year, month, day] = String(dateValue).split('-');
+
+  // Propósito: nombres cortos de los meses en español.
+  const monthNames = {
+    '01': 'ene',
+    '02': 'feb',
+    '03': 'mar',
+    '04': 'abr',
+    '05': 'may',
+    '06': 'jun',
+    '07': 'jul',
+    '08': 'ago',
+    '09': 'sep',
+    '10': 'oct',
+    '11': 'nov',
+    '12': 'dic',
+  };
+
+  // Propósito: si la fecha no viene en formato correcto, regresar el valor original.
+  if (!year || !month || !day || !monthNames[month]) {
+    return dateValue;
+  }
+
+  return `${day}/${monthNames[month]}`;
+};
+
+function Reports({ reportType = 'ingreso' }) {
   const navigate = useNavigate();
+
+  // Tipo de reporte que viene desde la ruta: /reports/ingresos o /reports/egresos.
+  const activeReportType = getSafeReportType(reportType);
 
   // Registros principales cargados desde PostgreSQL.
   const [records, setRecords] = useState([]);
@@ -49,7 +174,6 @@ function Reports() {
   // Filtros de reportes.
   const [period, setPeriod] = useState(String(getCurrentISOWeek().year));
   const [week, setWeek] = useState('todas');
-  const [type, setType] = useState('todos');
   const [date, setDate] = useState('');
   const [folio, setFolio] = useState('');
   const [name, setName] = useState('');
@@ -61,7 +185,6 @@ function Reports() {
   const [appliedFilters, setAppliedFilters] = useState({
     period: String(getCurrentISOWeek().year),
     week: 'todas',
-    type: 'todos',
     date: '',
     folio: '',
     name: '',
@@ -69,6 +192,9 @@ function Reports() {
     currency: 'todos',
     amount: ''
   });
+
+  const activeSection = REPORT_SECTIONS[activeReportType];
+
 
   // Periodos visibles: año actual y anterior.
   const years = useMemo(() => {
@@ -88,13 +214,12 @@ function Reports() {
       ? week
       : 'todas';
 
-  // Registros visibles en la tabla según filtros aplicados.
+  // Registros visibles en la tabla según sección activa y filtros aplicados.
   const filteredRows = useMemo(() => {
     return records.filter((record) => {
       const info = getISOWeekInfo(record.fecha);
       const filterYear = Number(appliedFilters.period);
       const filterWeek = appliedFilters.week;
-      const filterType = appliedFilters.type;
       const filterDate = appliedFilters.date.trim();
       const filterFolio = appliedFilters.folio.trim().toLowerCase();
       const filterName = appliedFilters.name.trim().toLowerCase();
@@ -102,13 +227,27 @@ function Reports() {
       const filterCurrency = appliedFilters.currency;
       const filterAmount = appliedFilters.amount.trim();
 
+      // Propósito: conservar visible una fila recién cancelada dentro del apartado donde estaba.
+      const tipoParaFiltrar =
+        record.tipo === 'cancelado' && record.tipoVistaOriginal
+          ? record.tipoVistaOriginal
+          : record.tipo;
+
+      // Propósito: en reportes de cancelados, mostrar solo cancelados.
+      if (activeReportType === 'cancelado' && record.tipo !== 'cancelado') {
+        return false;
+      }
+
+      // Propósito: en reportes de ingresos/egresos, permitir que una fila cancelada siga visible si nació en ese apartado.
+      if (activeReportType !== 'cancelado' && tipoParaFiltrar !== activeReportType) {
+        return false;
+      }
       if (info.year !== filterYear) return false;
 
       if (filterWeek !== 'todas' && info.week !== Number(filterWeek)) {
         return false;
       }
 
-      if (filterType !== 'todos' && record.tipo !== filterType) return false;
       if (filterDate !== '' && record.fecha !== filterDate) return false;
 
       if (
@@ -132,7 +271,7 @@ function Reports() {
         return false;
       }
 
-      if (filterCurrency !== 'todos' && record.moneda !== filterCurrency) {
+      if (filterCurrency !== 'todos' && normalizeCurrencyName(record.moneda) !== normalizeCurrencyName(filterCurrency)) {
         return false;
       }
 
@@ -142,7 +281,7 @@ function Reports() {
 
       return true;
     });
-  }, [records, appliedFilters]);
+  }, [records, appliedFilters, activeReportType]);
 
   // Protege la vista y carga los reportes desde la API.
   useEffect(() => {
@@ -173,19 +312,25 @@ function Reports() {
     loadReportsFromApi();
   }, [navigate]);
 
-  // Aplica clases generales del body.
+  // Aplica clases generales del body y cambia el color base según la sección activa.
   useEffect(() => {
-    document.body.classList.remove('login-page', 'modo-egreso');
-    document.body.classList.add('pagina-dashboard', 'pagina-reportes', 'modo-ingreso');
+    document.body.classList.remove('login-page', 'modo-ingreso', 'modo-egreso', 'modo-cancelado');
+    document.body.classList.add(
+      'pagina-dashboard',
+      'pagina-reportes',
+      activeReportType === 'egreso' ? 'modo-egreso' : activeReportType === 'cancelado' ? 'modo-cancelado' : 'modo-ingreso'
+    );
 
     return () => {
       document.body.classList.remove(
         'pagina-dashboard',
         'pagina-reportes',
-        'modo-ingreso'
+        'modo-ingreso',
+        'modo-egreso',
+        'modo-cancelado'
       );
     };
-  }, []);
+  }, [activeReportType]);
 
   // Oculta el toast automáticamente.
   useEffect(() => {
@@ -197,6 +342,7 @@ function Reports() {
 
     return () => clearTimeout(timeoutId);
   }, [toast]);
+
 
   // Actualiza un campo del formulario de edición.
   const updateEditForm = (field, value) => {
@@ -283,7 +429,7 @@ function Reports() {
 
       setToast({
         title: 'Movimiento actualizado',
-        text: 'Los cambios se guardaron correctamente en PostgreSQL.',
+        text: 'Los cambios se guardaron correctamente. Si cambiaste el tipo, aparecerá en su apartado correspondiente.',
         type: 'success'
       });
 
@@ -299,27 +445,38 @@ function Reports() {
     }
   };
 
-  // Elimina el movimiento seleccionado después de confirmar con el usuario.
+  // Propósito: cancelar el movimiento seleccionado sin eliminarlo visualmente de la tabla actual.
   const removeMovement = async (record) => {
     const confirmed = window.confirm(
-      `¿Seguro que deseas eliminar el movimiento con folio ${record.folio}? Esta acción no se puede deshacer.`
+      `¿Seguro que deseas cancelar el movimiento con folio ${record.folio}? Esta acción no se puede deshacer.`
     );
 
     if (!confirmed) return;
 
     try {
+      // Propósito: bloquear únicamente el botón de la fila actual.
       setDeletingId(record.id);
 
-      await deleteMovement(record.id);
+      // Propósito: mandar al backend la cancelación lógica del movimiento.
+      const canceledRecord = await deleteMovement(record.id);
 
-      // Quita de la tabla el registro eliminado sin recargar toda la página.
+      // Propósito: actualizar la fila como cancelada, pero conservar el apartado original en pantalla.
       setRecords((currentRecords) =>
-        currentRecords.filter((currentRecord) => currentRecord.id !== record.id)
+        currentRecords.map((currentRecord) =>
+          currentRecord.id === record.id
+            ? {
+              ...currentRecord,
+              ...canceledRecord,
+              tipo: 'cancelado',
+              tipoVistaOriginal: currentRecord.tipo,
+            }
+            : currentRecord
+        )
       );
 
       setToast({
-        title: 'Movimiento eliminado',
-        text: 'El registro se eliminó correctamente de PostgreSQL.',
+        title: 'Movimiento cancelado',
+        text: 'El registro se marcó como cancelado y permanece visible en la tabla.',
         type: 'success'
       });
     } catch (error) {
@@ -338,7 +495,6 @@ function Reports() {
     setAppliedFilters({
       period,
       week: selectedReportWeek,
-      type,
       date,
       folio,
       name,
@@ -348,13 +504,12 @@ function Reports() {
     });
   };
 
-  // Limpia los filtros y vuelve a los valores base.
+  // Limpia los filtros y vuelve a los valores base sin cambiar de apartado.
   const clearFilters = () => {
     const currentYear = String(getCurrentISOWeek().year);
 
     setPeriod(currentYear);
     setWeek('todas');
-    setType('todos');
     setDate('');
     setFolio('');
     setName('');
@@ -365,7 +520,6 @@ function Reports() {
     setAppliedFilters({
       period: currentYear,
       week: 'todas',
-      type: 'todos',
       date: '',
       folio: '',
       name: '',
@@ -375,73 +529,74 @@ function Reports() {
     });
   };
 
-  // Exporta el reporte filtrado actual.
+  // Exporta el reporte filtrado actual de la sección activa.
   const exportReportTable = () => {
     if (!filteredRows.length) {
       setToast({
         title: 'Error',
-        text: 'No hay registros para exportar con los filtros actuales.',
+        text: `No hay registros de ${activeSection.plural.toLowerCase()} para exportar con los filtros actuales.`,
         type: 'error'
       });
       return;
     }
 
-    const headerColor = appliedFilters.type === 'egreso' ? '#F0DC84' : '#86DFE6';
-
+    // Propósito: preparar las filas para exportar el reporte actual a Excel con el nuevo orden de columnas.
     const excelRows = filteredRows.map((record) => {
       const info = getISOWeekInfo(record.fecha);
 
       return [
-        record.tipo === 'ingreso' ? 'Ingresos' : 'Egresos',
-        record.fecha,
-        getWeekLabel(info.year, info.week),
+        info.week,
         record.folio,
+        formatShortDate(record.fecha),
         record.nombre,
         record.descripcion,
-        formatAmount(record.cantidad),
-        record.moneda
+        isDollarCurrency(record.moneda) ? formatMoneyByCurrency(record.cantidad, 'Dólares') : '',
+        isDollarCurrency(record.moneda) ? '' : formatMoneyByCurrency(record.cantidad, 'Pesos')
       ];
     });
 
     exportRowsToExcelXml({
       rows: excelRows,
-      sheetName: 'Reportes',
-      fileName: 'reporte_movimientos',
+      sheetName: activeSection.sheetName,
+      fileName: activeSection.fileName,
+      // Propósito: encabezados del Excel con nombres más cortos y entendibles.
       headers: [
-        'Tipo',
-        'Fecha',
-        'Semana',
+        'Sem',
         'Folio',
+        'Fecha',
         'Nombre',
-        'Descripción',
-        'Cantidad',
-        'Moneda'
+        'Concepto',
+        'Dólares',
+        'Pesos'
       ],
-      headerColor
+      headerColor: activeSection.headerColor
     });
 
     setToast({
       title: 'Exportación completada',
-      text: 'El reporte se exportó correctamente.',
+      text: `El reporte de ${activeSection.plural.toLowerCase()} se exportó correctamente.`,
       type: 'success'
     });
   };
 
   return (
     <>
-      <Header activePage="reportes" />
+      <Header activePage="reportes" reportType={activeReportType} />
 
       <main className="page-wrapper">
         <section className="page-header screenshot-style-header">
           <div>
-            <h1>Reportes de Movimientos</h1>
-            <p>Filtra, modifica o elimina movimientos generados desde la tabla general.</p>
+            <h1>{activeSection.title}</h1>
+            <p>{activeSection.description}</p>
           </div>
         </section>
 
         <section className="card reports-card">
           <div className="card-header reports-header-row">
-            <h2>Tabla general de movimientos</h2>
+            <div>
+              <h2>Detalle de {activeSection.plural}</h2>
+              <p className="report-section-description">Solo se muestran movimientos de tipo {activeSection.singular}.</p>
+            </div>
 
             <div className="reports-header-actions">
               <button type="button" className="btn btn-secondary" onClick={clearFilters}>
@@ -456,7 +611,7 @@ function Reports() {
             </div>
           </div>
 
-          <div className="reports-filters-strip">
+          <div className="reports-filters-strip reports-filters-separated">
             <div className="filter-box">
               <label htmlFor="reportPeriodo">Periodo</label>
               <select
@@ -488,20 +643,6 @@ function Reports() {
                     {getWeekLabel(Number(period), itemWeek)}
                   </option>
                 ))}
-              </select>
-            </div>
-
-            <div className="filter-box">
-              <label htmlFor="reportTipo">Movimientos</label>
-              <select
-                id="reportTipo"
-                className="filter-control"
-                value={type}
-                onChange={(event) => setType(event.target.value)}
-              >
-                <option value="todos">Todos</option>
-                <option value="ingreso">Ingresos</option>
-                <option value="egreso">Egresos</option>
               </select>
             </div>
 
@@ -562,7 +703,7 @@ function Reports() {
               >
                 <option value="todos">Todas</option>
                 <option value="Pesos">Pesos</option>
-                <option value="Dólares">Dólares</option>
+                <option value="Dolares">Dólares</option>
               </select>
             </div>
 
@@ -593,14 +734,13 @@ function Reports() {
             <table className="history-table report-table">
               <thead>
                 <tr>
-                  <th>Tipo</th>
-                  <th>Fecha</th>
-                  <th>Semana</th>
+                  <th>Sem</th>
                   <th>Folio</th>
+                  <th>Fecha</th>
                   <th>Nombre</th>
-                  <th>Descripción</th>
-                  <th>Cantidad</th>
-                  <th>Moneda</th>
+                  <th>Concepto</th>
+                  <th>Dólares</th>
+                  <th>Pesos</th>
                   <th>Acciones</th>
                 </tr>
               </thead>
@@ -608,20 +748,20 @@ function Reports() {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan="9" style={{ textAlign: 'center', padding: '18px' }}>
-                      Cargando reportes desde PostgreSQL...
+                    <td colSpan="8" style={{ textAlign: 'center', padding: '18px' }}>
+                      Cargando reporte de {activeSection.plural.toLowerCase()} desde PostgreSQL...
                     </td>
                   </tr>
                 ) : apiError ? (
                   <tr>
-                    <td colSpan="9" style={{ textAlign: 'center', padding: '18px' }}>
+                    <td colSpan="8" style={{ textAlign: 'center', padding: '18px' }}>
                       {apiError}
                     </td>
                   </tr>
                 ) : filteredRows.length === 0 ? (
                   <tr>
-                    <td colSpan="9" style={{ textAlign: 'center', padding: '18px' }}>
-                      No se encontraron registros para los filtros aplicados.
+                    <td colSpan="8" style={{ textAlign: 'center', padding: '18px' }}>
+                      No se encontraron registros de {activeSection.plural.toLowerCase()} para los filtros aplicados.
                     </td>
                   </tr>
                 ) : (
@@ -629,27 +769,38 @@ function Reports() {
                     const info = getISOWeekInfo(record.fecha);
                     const isDeletingCurrentRow = deletingId === record.id;
 
+                    const isCanceledRow = record.tipo === 'cancelado';
+
                     return (
-                      <tr key={record.id}>
-                        <td>
-                          <span className={`tipo-badge ${record.tipo}`}>
-                            {record.tipo === 'ingreso' ? 'Ingresos' : 'Egresos'}
-                          </span>
-                        </td>
-                        <td>{record.fecha}</td>
-                        <td>{getWeekLabel(info.year, info.week)}</td>
+                      <tr key={record.id} className={isCanceledRow ? 'report-row-cancelado' : ''}>
+                        {/* Propósito: mostrar solo el número de semana, no el rango de fechas. */}
+                        <td>{info.week}</td>
+
+                        {/* Propósito: conservar folio después de la semana. */}
                         <td>{record.folio}</td>
+
+                        {/* Propósito: mostrar la fecha después del folio. */}
+                        <td>{formatShortDate(record.fecha)}</td>
+
+                        {/* Propósito: mostrar el nombre relacionado con el movimiento. */}
                         <td>{record.nombre}</td>
+
+                        {/* Propósito: mostrar la descripción como concepto. */}
                         <td>{record.descripcion}</td>
-                        <td>{formatAmount(record.cantidad)}</td>
-                        <td>{record.moneda}</td>
+
+                        {/* Propósito: mostrar montos en dólares antes que pesos. */}
+                        <td className="money-cell">{getAmountForCurrencyColumn(record, 'Dólares')}</td>
+
+                        {/* Propósito: mostrar montos en pesos después de dólares. */}
+                        <td className="money-cell">{getAmountForCurrencyColumn(record, 'Pesos')}</td>
+
                         <td>
                           <div className="report-row-actions">
                             <button
                               type="button"
                               className="btn-icon-action btn-edit-row"
                               onClick={() => openEditModal(record)}
-                              disabled={Boolean(deletingId)}
+                              disabled={Boolean(deletingId) || record.tipo === 'cancelado'}
                               title="Modificar movimiento"
                             >
                               <span className="material-icons-outlined">edit</span>
@@ -660,13 +811,13 @@ function Reports() {
                               type="button"
                               className="btn-icon-action btn-delete-row"
                               onClick={() => removeMovement(record)}
-                              disabled={Boolean(deletingId)}
-                              title="Eliminar movimiento"
+                              disabled={Boolean(deletingId) || record.tipo === 'cancelado'}
+                              title="Cancelar movimiento"
                             >
                               <span className="material-icons-outlined">
-                                {isDeletingCurrentRow ? 'hourglass_top' : 'delete'}
+                                {isDeletingCurrentRow ? 'hourglass_top' : 'block'}
                               </span>
-                              {isDeletingCurrentRow ? 'Eliminando' : 'Eliminar'}
+                              {record.tipo === 'cancelado' ? 'Cancelado' : isDeletingCurrentRow ? 'Cancelando' : 'Cancelar'}
                             </button>
                           </div>
                         </td>
@@ -761,17 +912,26 @@ function Reports() {
               </div>
 
               <div className="filter-box">
-                <label htmlFor="editMoneda">Moneda</label>
-                <select
-                  id="editMoneda"
-                  className="filter-control"
-                  value={editForm.moneda}
-                  onChange={(event) => updateEditForm('moneda', event.target.value)}
-                >
-                  <option value="">Selecciona una moneda</option>
-                  <option value="Pesos">Pesos</option>
-                  <option value="Dólares">Dólares</option>
-                </select>
+                <label>Moneda *</label>
+
+                <div className="currency-choice-group" role="radiogroup" aria-label="Seleccionar moneda">
+                  {CURRENCY_OPTIONS.map((currency) => (
+                    <button
+                      key={currency.value}
+                      type="button"
+                      className={`currency-choice ${isCurrencySelected(editForm.moneda, currency.value) ? 'selected' : ''}`}
+                      onClick={() => updateEditForm('moneda', currency.value)}
+                      aria-pressed={isCurrencySelected(editForm.moneda, currency.value)}
+                    >
+                      <span className="currency-choice-symbol">{currency.symbol}</span>
+                      <span className="currency-choice-text">
+                        <strong>{currency.label}</strong>
+                        <small>{currency.helper}</small>
+                      </span>
+                      <span className="material-icons-outlined currency-choice-check">check_circle</span>
+                    </button>
+                  ))}
+                </div>
               </div>
 
               <div className="filter-box report-modal-wide">
