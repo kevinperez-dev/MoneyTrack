@@ -1,14 +1,10 @@
 -- Archivo: add_tipo_cancelado_drop_estatus.sql
--- Propósito:
--- 1. Usar la columna tipo para ingreso, egreso y cancelado.
--- 2. Migrar registros con estatus = cancelado hacia tipo = cancelado.
--- 3. Eliminar la columna estatus si existe.
--- 4. Permitir Pesos, Dolares y Dólares en moneda.
+-- Propósito: permitir cancelación lógica usando la columna tipo y quitar estatus si existe.
 
 -- Propósito: cerrar una transacción fallida en pgAdmin si quedó bloqueada.
 ROLLBACK;
 
--- Propósito: eliminar restricciones viejas relacionadas con tipo antes de cambiar valores.
+-- Propósito: eliminar restricciones CHECK antiguas relacionadas con tipo.
 DO $$
 DECLARE
     constraint_record RECORD;
@@ -56,7 +52,7 @@ UPDATE public.movements
 SET tipo = 'cancelado'
 WHERE tipo IN ('cancelada', 'cancelled', 'canceled');
 
--- Propósito: si quedó algún tipo inválido, detener antes de crear la restricción.
+-- Propósito: detener si hay tipos inválidos.
 DO $$
 BEGIN
     IF EXISTS (
@@ -68,12 +64,12 @@ BEGIN
     END IF;
 END $$;
 
--- Propósito: crear la nueva regla para tipo.
+-- Propósito: crear nueva restricción de tipo.
 ALTER TABLE public.movements
 ADD CONSTRAINT movements_tipo_check
 CHECK (tipo IN ('ingreso', 'egreso', 'cancelado'));
 
--- Propósito: eliminar restricciones viejas relacionadas con moneda.
+-- Propósito: eliminar restricciones CHECK antiguas relacionadas con moneda.
 DO $$
 DECLARE
     constraint_record RECORD;
@@ -102,16 +98,16 @@ UPDATE public.movements
 SET moneda = 'Dólares'
 WHERE moneda IN ('dólares', 'DÓLARES');
 
--- Propósito: aceptar dólares con o sin acento para evitar errores de captura.
+-- Propósito: aceptar dólares con o sin acento.
 ALTER TABLE public.movements
 ADD CONSTRAINT movements_moneda_check
 CHECK (moneda IN ('Pesos', 'Dolares', 'Dólares'));
 
--- Propósito: eliminar columna estatus porque cancelado ahora vive en tipo.
+-- Propósito: eliminar columna estatus porque cancelado vive en tipo.
 ALTER TABLE public.movements
 DROP COLUMN IF EXISTS estatus;
 
--- Propósito: asegurar índices usados por filtros.
+-- Propósito: crear índices útiles para filtros.
 CREATE INDEX IF NOT EXISTS idx_movements_tipo ON public.movements(tipo);
 CREATE INDEX IF NOT EXISTS idx_movements_fecha ON public.movements(fecha);
 CREATE INDEX IF NOT EXISTS idx_movements_folio ON public.movements(folio);
@@ -126,11 +122,3 @@ SELECT moneda, COUNT(*) AS total
 FROM public.movements
 GROUP BY moneda
 ORDER BY moneda;
-
-SELECT
-    conname AS nombre_restriccion,
-    pg_get_constraintdef(oid) AS definicion
-FROM pg_constraint
-WHERE conrelid = 'public.movements'::regclass
-  AND contype = 'c'
-ORDER BY conname;

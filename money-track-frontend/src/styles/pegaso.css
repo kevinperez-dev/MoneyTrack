@@ -2127,50 +2127,262 @@ body.modo-egreso .report-section-tab.active .material-icons-outlined {
   }
 }
 
-/* =========================================================
-   CANCELACIÓN LÓGICA
-   Propósito: marcar visualmente los movimientos cancelados sin eliminarlos.
-========================================================= */
-body.modo-cancelado .history-table thead th,
-body.modo-cancelado .report-table thead th {
-  background: #fca5a5;
-  color: #7f1d1d;
+/* ============================================================
+   Ajustes para reportes cancelados y prueba de montos editados
+   ============================================================ */
+
+/* Propósito: pintar de rojo toda la fila cuando el movimiento está cancelado. */
+.report-table tbody tr.report-row-cancelado td {
+  background-color: #ffe1e1 !important;
+  color: #8a1f1f !important;
+  border-color: #f3b6b6 !important;
 }
 
-.tipo-badge.cancelado {
-  background: #fee2e2;
-  color: #991b1b;
-  border: 1px solid #fecaca;
+/* Propósito: mantener la fila cancelada en rojo al pasar el mouse. */
+.report-table tbody tr.report-row-cancelado:hover td {
+  background-color: #ffd1d1 !important;
 }
 
-.tipo-badge.ingreso {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+/* Propósito: separar visualmente la tabla temporal de montos editados. */
+.edited-preview-card {
+  margin-top: 22px;
 }
 
-.tipo-badge.egreso {
-  background: #fef3c7;
-  color: #92400e;
-  border: 1px solid #fde68a;
+/* Propósito: etiqueta para indicar que la tabla todavía es de prueba. */
+.edited-preview-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+  font-size: 0.82rem;
+  font-weight: 700;
 }
 
-.report-row-cancelado td {
-  background: #fff1f2 !important;
-  color: #991b1b !important;
-  border-color: #fecdd3 !important;
+/* Propósito: resaltar filas de prueba que tienen ajuste registrado. */
+.report-table tbody tr.report-row-edited td {
+  background-color: #fffaf0;
 }
 
-.report-row-cancelado:hover td {
-  background: #ffe4e6 !important;
+/* Propósito: mantener legible la fila de prueba editada al pasar el mouse. */
+.report-table tbody tr.report-row-edited:hover td {
+  background-color: #fff3d6;
 }
 
-.report-row-cancelado .money-cell {
-  color: #991b1b !important;
+/* Propósito: acomodar la etiqueta y botón del ajuste dentro de la celda. */
+.adjustment-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 7px;
+}
+
+/* Propósito: mostrar que una fila tuvo una edición o ajuste. */
+.adjustment-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background-color: #facc15;
+  color: #713f12;
+  font-size: 0.72rem;
   font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
 }
 
-.report-row-cancelado .btn-edit-row,
-.report-row-cancelado .btn-delete-row {
-  opacity: 0.55;
+/* Propósito: botón para abrir el detalle del ajuste. */
+.btn-adjustment-detail {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 1px solid #cbd5e1;
+  background: #ffffff;
+  color: #1f2937;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* Propósito: mejorar el estado hover del botón de detalle. */
+.btn-adjustment-detail:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+/* Propósito: ajustar el tamaño del ícono dentro del botón. */
+.btn-adjustment-detail .material-icons-outlined {
+  font-size: 16px;
+}
+
+/* Propósito: texto para filas sin ajustes. */
+.no-adjustment-text {
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+/* Propósito: tamaño especial del modal de detalle de ajuste. */
+.adjustment-modal-card {
+  max-width: 620px;
+}
+
+/* Propósito: organizar los datos del ajuste en tarjetas pequeñas. */
+.adjustment-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+/* Propósito: caja visual para cada dato del ajuste. */
+.adjustment-detail-box {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px;
+  border-radius: 16px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+}
+
+/* Propósito: etiqueta secundaria dentro del detalle. */
+.adjustment-detail-box span {
+  color: #64748b;
+  font-size: 0.78rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* Propósito: valor principal dentro del detalle. */
+.adjustment-detail-box strong {
+  color: #111827;
+  font-size: 1rem;
+}
+
+/* Propósito: resaltar la diferencia del ajuste. */
+.adjustment-detail-difference {
+  grid-column: 1 / -1;
+  background: #fff7ed;
+  border-color: #fed7aa;
+}
+
+/* Propósito: acomodar el botón de cierre del modal. */
+.adjustment-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+/* Propósito: adaptar el modal a pantallas pequeñas. */
+@media (max-width: 640px) {
+  .adjustment-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ============================================================
+   Ajustes reales de movimientos editados
+   ============================================================ */
+
+/* Propósito: dejar limpia la celda cuando un cancelado no tiene ajuste. */
+.empty-adjustment-cell {
+  display: inline-block;
+  min-height: 1px;
+  color: #9ca3af;
+  font-weight: 700;
+}
+
+/* Propósito: centrar el botón de ver ajuste en la tabla de cancelados. */
+.report-table td .btn-adjustment-detail {
+  margin: 0 auto;
+}
+
+/* Propósito: pintar de rojo los movimientos cancelados incluso si también tienen ajuste. */
+.report-table tbody tr.report-row-cancelado td,
+.history-table tbody tr.report-row-cancelado td {
+  background-color: #ffe1e1 !important;
+  color: #8a1f1f !important;
+  border-color: #f3b6b6 !important;
+}
+
+/* Propósito: mantener la fila cancelada en rojo al pasar el mouse. */
+.report-table tbody tr.report-row-cancelado:hover td,
+.history-table tbody tr.report-row-cancelado:hover td {
+  background-color: #ffd1d1 !important;
+}
+
+/* ============================================================
+   Historial completo de ajustes en Reportes > Cancelados
+   ============================================================ */
+
+/* Propósito: separar el historial completo de la tabla principal. */
+.edit-history-card {
+  margin-top: 22px;
+}
+
+/* Propósito: hacer más legible la diferencia dentro del historial. */
+.edit-history-difference {
+  font-weight: 800;
+  color: #92400e !important;
+}
+
+/* Propósito: permitir que la tabla de historial respire en pantallas grandes. */
+.edit-history-table th,
+.edit-history-table td {
+  white-space: nowrap;
+}
+
+/* Propósito: permitir que concepto y nombre no rompan la lectura del historial. */
+.edit-history-table td:nth-child(4),
+.edit-history-table td:nth-child(5) {
+  white-space: normal;
+  min-width: 150px;
+}
+
+/* ============================================================
+   Botón Ver ajuste dentro de Acciones y campos modificados
+   ============================================================ */
+/* Propósito: diferenciar el botón Ver ajuste cuando vive junto a Editar y Cancelar. */
+.btn-adjustment-row {
+  background: #ecfdf5;
+  color: #047857;
+}
+
+/* Propósito: mejorar el estado hover del botón Ver ajuste. */
+.btn-adjustment-row:hover:not(:disabled) {
+  background: #d1fae5;
+}
+
+/* Propósito: resaltar en verde el campo que cambió en el último ajuste. */
+.adjustment-detail-changed {
+  background: #ecfdf5;
+  border-color: #86efac;
+}
+
+/* Propósito: hacer visible el título de un campo modificado. */
+.adjustment-detail-changed span {
+  color: #047857;
+}
+
+/* Propósito: mostrar el valor anterior dentro de un campo modificado. */
+.adjustment-field-before {
+  display: block;
+  color: #047857;
+  font-size: 0.78rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+/* Propósito: dar más espacio al modal porque ahora muestra más campos. */
+.adjustment-modal-card {
+  max-width: 780px;
 }

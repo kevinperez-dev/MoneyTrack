@@ -47,13 +47,17 @@ function Header({
             return;
         }
 
-        
+        if (type === 'egreso') {
+            navigate('/reports/egresos');
+            return;
+        }
+
         if (type === 'cancelado') {
             navigate('/reports/cancelados');
             return;
         }
 
-        navigate(type === 'egreso' ? '/reports/egresos' : '/reports/ingresos');
+        navigate('/reports/ingresos');
     };
 
     // Abre o cierra el submenú de movimientos y cierra el de reportes.
@@ -73,7 +77,7 @@ function Header({
             <div className="topbar-left">
                 <div className="brand">
                     <img src="/logo-sinFondo.png" alt="Logo" className="brand-logo" />
-                    <span className="brand-name">Snoopy Project</span>
+                    <span className="brand-name">MoneyTrack</span>
                 </div>
 
                 <nav className="top-nav">
