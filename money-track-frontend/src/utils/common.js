@@ -320,8 +320,13 @@ export function getMaxAllowedWeekForYear(year, records) {
 }
 
 export function formatAmount(value) {
+  // Propósito: mostrar cantidades con comas y dos decimales para mejorar la lectura.
   const number = Number(value || 0);
-  return number.toFixed(2);
+
+  return new Intl.NumberFormat('en-US', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(number);
 }
 
 export function generateAutoFolio(dateISO, records) {

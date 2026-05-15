@@ -1,13 +1,45 @@
 // Archivo: src/services/authApi.js
-// Propósito: centralizar las peticiones de autenticación hacia el backend
+// Propósito: centralizar las peticiones de autenticación del sistema.
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
-// Función para hacer peticiones con tiempo límite
+// Propósito: convertir errores técnicos en mensajes claros para el usuario.
+function getFriendlyAuthMessage(message = '') {
+  const normalizedMessage = String(message).toLowerCase();
+
+  if (
+    normalizedMessage.includes('failed to fetch') ||
+    normalizedMessage.includes('network') ||
+    normalizedMessage.includes('conectar')
+  ) {
+    return 'No se pudo conectar. Revisa tu conexión e intenta nuevamente.';
+  }
+
+  if (
+    normalizedMessage.includes('timeout') ||
+    normalizedMessage.includes('tardó demasiado') ||
+    normalizedMessage.includes('abort')
+  ) {
+    return 'La respuesta tardó demasiado. Intenta nuevamente en unos segundos.';
+  }
+
+  if (
+    normalizedMessage.includes('unauthorized') ||
+    normalizedMessage.includes('invalid') ||
+    normalizedMessage.includes('incorrect') ||
+    normalizedMessage.includes('credencial')
+  ) {
+    return 'Usuario o contraseña incorrectos.';
+  }
+
+  return message || 'No se pudo completar la acción. Intenta nuevamente.';
+}
+
+// Propósito: hacer peticiones con tiempo límite para evitar esperas largas.
 async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
   const controller = new AbortController();
 
-  // Cancela la petición si tarda demasiado
+  // Propósito: cancelar la petición si tarda demasiado.
   const timeoutId = setTimeout(() => {
     controller.abort();
   }, timeoutMs);
@@ -20,13 +52,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
 
     return response;
   } catch (error) {
-    if (error.name === 'AbortError') {
-      throw new Error(`El backend tardó demasiado en responder: ${API_BASE_URL}`, {
-        cause: error,
-      });
-    }
-
-    throw new Error(`No se pudo conectar con el backend configurado: ${API_BASE_URL}`, {
+    throw new Error(getFriendlyAuthMessage(error.message), {
       cause: error,
     });
   } finally {
@@ -34,7 +60,7 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 60000) {
   }
 }
 
-// Lee la respuesta JSON de forma segura
+// Propósito: leer la respuesta JSON sin romper la pantalla si viene vacía.
 async function readJsonResponse(response) {
   try {
     return await response.json();
@@ -43,7 +69,7 @@ async function readJsonResponse(response) {
   }
 }
 
-// Iniciar sesión
+// Propósito: iniciar sesión con usuario y contraseña.
 export async function loginUser(username, password) {
   const response = await fetchWithTimeout(`${API_BASE_URL}/auth/login`, {
     method: 'POST',
@@ -59,17 +85,15 @@ export async function loginUser(username, password) {
   const data = await readJsonResponse(response);
 
   if (!response.ok) {
-    throw new Error(data.message || 'Usuario o contraseña incorrectos.');
+    throw new Error(getFriendlyAuthMessage(data.message || 'Usuario o contraseña incorrectos.'));
   }
 
   return data;
 }
 
-// Obtener sesión actual
+// Propósito: consultar la sesión actual.
 export async function getCurrentSession() {
-
-  // Obtiene el token guardado solo para la sesión actual
-const token = sessionStorage.getItem('pegasoToken');
+  const token = localStorage.getItem('pegasoToken') || sessionStorage.getItem('pegasoToken');
 
   const response = await fetchWithTimeout(`${API_BASE_URL}/auth/me`, {
     headers: {
@@ -80,7 +104,7 @@ const token = sessionStorage.getItem('pegasoToken');
   const data = await readJsonResponse(response);
 
   if (!response.ok) {
-    throw new Error(data.message || 'Sesión inválida.');
+    throw new Error(getFriendlyAuthMessage(data.message || 'Tu sesión terminó. Vuelve a iniciar sesión.'));
   }
 
   return data;

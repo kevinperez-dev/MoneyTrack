@@ -392,6 +392,7 @@ async function updateMovement(req, res) {
     }
 
     const { tipo, fecha, folio, nombre, descripcion, cantidad, moneda } = validation.data;
+    const comentario = String(req.body.comentario || '').trim();
 
     await client.query('BEGIN');
 
@@ -447,7 +448,15 @@ async function updateMovement(req, res) {
       amountWasAdjusted ||
       currencyWasAdjusted;
 
-    // Propósito: guardar la edición antes de actualizar el movimiento actual.
+    if (movementWasAdjusted && !comentario) {
+      await client.query('ROLLBACK');
+      return res.status(400).json({
+        message: 'Agrega un comentario para explicar la edición.',
+      });
+    }
+
+    // Propósito: guardar UNA sola fila de historial por cada clic en Guardar.
+    // El comentario no se genera automáticamente; lo captura el usuario en el modal.
     if (movementWasAdjusted) {
       await client.query(
         `
@@ -489,7 +498,7 @@ async function updateMovement(req, res) {
           newAmount,
           newCurrency,
           req.user.id,
-          'Edición registrada desde Reportes',
+          comentario,
         ],
       );
     }

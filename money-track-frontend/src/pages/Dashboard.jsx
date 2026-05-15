@@ -44,16 +44,16 @@ const modeConfig = {
 
 const CURRENCY_OPTIONS = [
   {
+    value: 'Dolares',
+    label: 'Dólares',
+    symbol: '$',
+    helper: 'Dólares'
+  },
+  {
     value: 'Pesos',
     label: 'Pesos',
     symbol: '$',
-    helper: 'MXN'
-  },
-  {
-    value: 'Dolares',
-    label: 'Dólares',
-    symbol: 'US$',
-    helper: 'USD'
+    helper: 'Moneda nacional'
   }
 ];
 
@@ -70,12 +70,9 @@ function isCurrencySelected(currentCurrency, optionCurrency) {
   return normalizeCurrencyName(currentCurrency) === normalizeCurrencyName(optionCurrency);
 }
 
-// Da formato a los importes usando el símbolo correcto según la moneda seleccionada.
-function formatMoneyByCurrency(amount, currency) {
-  const normalizedCurrency = normalizeCurrencyName(currency);
-
-  const symbol = normalizedCurrency.includes('dolar') || normalizedCurrency.includes('usd') ? 'US$' : '$';
-  return `${symbol}${formatAmount(amount || 0)}`;
+// Da formato a los importes usando únicamente el símbolo $ para ambas monedas.
+function formatMoneyByCurrency(amount) {
+  return `$${formatAmount(amount || 0)}`;
 }
 
 // Identifica si el movimiento pertenece a pesos o dólares para separarlo en columnas.
@@ -91,7 +88,9 @@ function getAmountForCurrencyColumn(record, targetCurrency) {
       ? isDollarCurrency(record.moneda)
       : !isDollarCurrency(record.moneda);
 
-  return shouldShowAmount ? formatMoneyByCurrency(record.cantidad, targetCurrency) : '—';
+  return shouldShowAmount && Number(record.cantidad || 0) > 0
+    ? formatMoneyByCurrency(record.cantidad, targetCurrency)
+    : '--';
 }
 
 // Convierte una fecha YYYY-MM-DD a formato corto, por ejemplo 04/may.
@@ -209,6 +208,32 @@ function Dashboard() {
     });
   }, [records, type, period, selectedWeek, appliedFolioSearch]);
 
+  // Calcula el total visible de la semana seleccionada, separado por dólares y pesos.
+  const tableTotals = useMemo(() => {
+    return filteredRows.reduce(
+      (accumulator, record) => {
+        const amount = Number(record.cantidad || 0);
+
+        if (isDollarCurrency(record.moneda)) {
+          accumulator.dolares += amount;
+        } else {
+          accumulator.pesos += amount;
+        }
+
+        return accumulator;
+      },
+      {
+        dolares: 0,
+        pesos: 0
+      }
+    );
+  }, [filteredRows]);
+
+  // Muestra importes de totales; si son cero, muestra --.
+  const renderTotalAmount = (amount) => {
+    return Number(amount || 0) > 0 ? formatMoneyByCurrency(amount) : '--';
+  };
+
   // Protege la vista y carga movimientos desde la API.
   useEffect(() => {
     if (!isAuthenticated()) {
@@ -226,8 +251,8 @@ function Dashboard() {
       } catch (error) {
         setApiError(error.message);
         setToast({
-          title: 'Error',
-          text: 'No se pudieron cargar los movimientos desde PostgreSQL.',
+          title: 'Aviso',
+          text: 'No se pudieron cargar los movimientos. Intenta nuevamente.',
           type: 'error'
         });
       } finally {
@@ -305,7 +330,7 @@ function Dashboard() {
       !form.moneda
     ) {
       setToast({
-        title: 'Error',
+        title: 'Aviso',
         text: 'Completa todos los campos y selecciona una moneda.',
         type: 'error'
       });
@@ -338,14 +363,19 @@ function Dashboard() {
 
       setToast({
         title: `${type === 'ingreso' ? 'Ingreso' : 'Egreso'} guardado exitosamente`,
-        text: 'El movimiento se guardó correctamente en PostgreSQL.',
+        text: 'Movimiento guardado.',
         type: 'success'
       });
 
-      clearForm();
+      // Propósito: abrir la ventana de impresión automáticamente después de guardar.
+      // Se limpia el formulario hasta que la impresión se haya enviado o cerrado.
+      window.setTimeout(() => {
+        window.print();
+        clearForm();
+      }, 250);
     } catch (error) {
       setToast({
-        title: 'Error',
+        title: 'Aviso',
         text: error.message,
         type: 'error'
       });
@@ -358,8 +388,8 @@ function Dashboard() {
   const exportVisibleWeekToExcel = () => {
     if (!filteredRows.length) {
       setToast({
-        title: 'Error',
-        text: 'No hay registros para exportar en la semana seleccionada.',
+        title: 'Aviso',
+        text: 'No hay movimientos para exportar en la semana seleccionada.',
         type: 'error'
       });
       return;
@@ -389,296 +419,11 @@ function Dashboard() {
 
     setToast({
       title: 'Exportación completada',
-      text: 'La tabla visible se exportó correctamente.',
+      text: 'Tabla exportada.',
       type: 'success'
     });
   };
 
-  // Imprime la vista previa del movimiento.
-  const printMovementPreview = () => {
-    if (!labelSheetRef.current) {
-      setToast({
-        title: 'Error',
-        text: 'No se encontró la vista previa para imprimir.',
-        type: 'error'
-      });
-      return;
-    }
-
-    // Clona únicamente el ticket visible en pantalla.
-    const clone = labelSheetRef.current.cloneNode(true);
-
-    // Usa el logo desde la carpeta public para que funcione en local y producción.
-    const logoUrl = new URL('/snoopy-laptop-removebg-preview.png', window.location.origin).href;
-
-    // Asegura que las imágenes del ticket usen una ruta válida en producción.
-    clone.querySelectorAll('img').forEach((img) => {
-      img.setAttribute('src', logoUrl);
-    });
-
-    // Abre una ventana nueva para imprimir solo el ticket.
-    const printWindow = window.open('', '_blank', 'width=900,height=700');
-
-    if (!printWindow) {
-      setToast({
-        title: 'Error',
-        text: 'El navegador bloqueó la ventana de impresión.',
-        type: 'error'
-      });
-      return;
-    }
-
-    // Estilos internos del ticket.
-    // Se colocan aquí para que no dependa del CSS compilado por Vite.
-    const ticketStyles = `
-    * {
-      box-sizing: border-box;
-    }
-
-    html,
-    body {
-      margin: 0;
-      padding: 0;
-      background: #ffffff;
-      font-family: "Roboto", "Segoe UI", Arial, sans-serif;
-      color: #111827;
-    }
-
-    body {
-      padding: 20px;
-    }
-
-    @page {
-      size: auto;
-      margin: 12mm;
-    }
-
-    .label-sheet {
-      width: 100%;
-      max-width: 760px;
-      margin: 0 auto;
-      background: #ffffff;
-      border: 1px solid #dfdfdf;
-      border-radius: 14px;
-      min-height: auto;
-      padding: 16px;
-      box-shadow: none;
-    }
-
-    .label-top {
-      display: flex;
-      justify-content: space-between;
-      gap: 14px;
-      border-bottom: 1px solid #e7e7e7;
-      padding-bottom: 12px;
-      margin-bottom: 14px;
-    }
-
-    .label-brand {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }
-
-    .label-brand img {
-      width: 48px;
-      height: 48px;
-      object-fit: contain;
-    }
-
-    .label-brand h3 {
-      font-size: 1rem;
-      font-weight: 700;
-      color: #111111;
-      margin: 0 0 2px 0;
-    }
-
-    .label-brand p {
-      font-size: 0.9rem;
-      color: #666666;
-      font-weight: 400;
-      margin: 0;
-    }
-
-    .label-code-box {
-      min-width: 160px;
-      background: #111111;
-      color: #ffffff;
-      border-radius: 12px;
-      padding: 12px 14px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-    }
-
-    .label-mini-title {
-      font-size: 0.75rem;
-      color: rgba(255, 255, 255, 0.74);
-      margin-bottom: 4px;
-      font-weight: 400;
-    }
-
-    .label-code-box strong {
-      font-size: 0.98rem;
-      font-weight: 700;
-      letter-spacing: 0.4px;
-    }
-
-    .label-body {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
-
-    .label-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-    }
-
-    .label-field {
-      border: 1px solid #dddddd;
-      border-radius: 10px;
-      padding: 12px;
-      background: #fafafa;
-      min-height: 66px;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 4px;
-    }
-
-    .label-field.full {
-      grid-column: 1 / -1;
-    }
-
-    .field-title {
-      font-size: 0.78rem;
-      font-weight: 500;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #8b8b8b;
-    }
-
-    .label-field span:last-child {
-      font-size: 0.95rem;
-      font-weight: 500;
-      color: #202020;
-      word-break: break-word;
-    }
-
-    .label-footer {
-      margin-top: 16px;
-      border-top: 1px solid #e8e8e8;
-      padding-top: 14px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .barcode-box {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .barcode {
-      width: 100%;
-      max-width: 300px;
-      height: 58px;
-      border-radius: 4px;
-      background: repeating-linear-gradient(
-        90deg,
-        #111111 0px,
-        #111111 2px,
-        #ffffff 2px,
-        #ffffff 4px,
-        #111111 4px,
-        #111111 7px,
-        #ffffff 7px,
-        #ffffff 9px
-      );
-      border: 1px solid #d8d8d8;
-    }
-
-    .barcode-box span {
-      font-size: 0.9rem;
-      font-weight: 500;
-      letter-spacing: 0.4px;
-    }
-
-    .signature-area {
-      width: 100%;
-      margin-top: 30px;
-      padding-top: 22px;
-      text-align: center;
-    }
-
-    .signature-line {
-      width: 72%;
-      height: 1px;
-      background: #111827;
-      margin: 0 auto 8px;
-    }
-
-    .signature-label {
-      font-size: 12px;
-      font-weight: 700;
-      color: #111827;
-    }
-
-    .signature-note {
-      margin-top: 3px;
-      font-size: 10px;
-      color: #6b7280;
-    }
-
-    .print-note {
-      text-align: center;
-      font-size: 0.82rem;
-      color: #777777;
-    }
-
-    @media print {
-      body {
-        padding: 0;
-      }
-
-      .label-sheet {
-        border-radius: 10px;
-      }
-    }
-  `;
-
-    // Escribe el documento final de impresión.
-    printWindow.document.write(`
-    <!DOCTYPE html>
-    <html lang="es">
-      <head>
-        <meta charset="UTF-8" />
-        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Impresión de Movimiento</title>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-        <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet" />
-        <style>${ticketStyles}</style>
-      </head>
-      <body>
-        ${clone.outerHTML}
-      </body>
-    </html>
-  `);
-
-    printWindow.document.close();
-
-    // Espera a que cargue la ventana y lanza la impresión.
-    printWindow.onload = () => {
-      printWindow.focus();
-      printWindow.print();
-      printWindow.onafterprint = () => printWindow.close();
-    };
-  };
 
   return (
     <>
@@ -767,15 +512,15 @@ function Dashboard() {
                   />
                 </div>
 
-                <div className="form-group">
+                <div className="form-group currency-action-group">
                   <label>Moneda *</label>
 
-                  <div className="currency-choice-group" role="radiogroup" aria-label="Seleccionar moneda">
+                  <div className="currency-choice-group dashboard-currency-row" role="radiogroup" aria-label="Seleccionar moneda">
                     {CURRENCY_OPTIONS.map((currency) => (
                       <button
                         key={currency.value}
                         type="button"
-                        className={`currency-choice ${isCurrencySelected(form.moneda, currency.value) ? 'selected' : ''}`}
+                        className={`currency-choice compact ${isCurrencySelected(form.moneda, currency.value) ? 'selected' : ''}`}
                         onClick={() => updateForm('moneda', currency.value)}
                         aria-pressed={isCurrencySelected(form.moneda, currency.value)}
                       >
@@ -789,28 +534,23 @@ function Dashboard() {
                     ))}
                   </div>
                 </div>
-              </div>
 
-              <div className="form-actions">
-                <button type="button" className="btn btn-secondary" onClick={clearForm}>
-                  <span className="material-icons-outlined">refresh</span>
-                  Limpiar
-                </button>
+                <div className="form-actions dashboard-form-actions">
+                  <button type="button" className="btn btn-light" onClick={clearForm}>
+                    <span className="material-icons-outlined">cleaning_services</span>
+                    Limpiar
+                  </button>
 
-                <button
-                  type="button"
-                  className="btn btn-dark"
-                  onClick={saveMovement}
-                  disabled={isSaving}
-                >
-                  <span className="material-icons-outlined">save</span>
-                  {isSaving ? 'Guardando...' : 'Guardar'}
-                </button>
-
-                <button type="button" className="btn btn-gold" onClick={printMovementPreview}>
-                  <span className="material-icons-outlined">print</span>
-                  Imprimir
-                </button>
+                  <button
+                    type="button"
+                    className="btn btn-dark"
+                    onClick={saveMovement}
+                    disabled={isSaving}
+                  >
+                    <span className="material-icons-outlined">save</span>
+                    {isSaving ? 'Guardando...' : 'Guardar'}
+                  </button>
+                </div>
               </div>
             </form>
           </div>
@@ -1000,7 +740,7 @@ function Dashboard() {
                 {isLoading ? (
                   <tr>
                     <td colSpan="7" style={{ textAlign: 'center', padding: '18px' }}>
-                      Cargando movimientos desde PostgreSQL...
+                      Cargando movimientos...
                     </td>
                   </tr>
                 ) : apiError ? (
@@ -1028,7 +768,7 @@ function Dashboard() {
                         <td>{record.folio}</td>
                         <td>{formatShortDate(record.fecha)}</td>
                         <td>{record.nombre}</td>
-                        <td>{record.descripcion}</td>
+                        <td className="concept-cell">{record.descripcion}</td>
                         <td className="money-cell">{getAmountForCurrencyColumn(record, 'Dólares')}</td>
                         <td className="money-cell">{getAmountForCurrencyColumn(record, 'Pesos')}</td>
                       </tr>
@@ -1036,6 +776,16 @@ function Dashboard() {
                   })
                 )}
               </tbody>
+
+              {!isLoading && !apiError && filteredRows.length > 0 && (
+                <tfoot>
+                  <tr className="history-total-row">
+                    <td colSpan="5" className="total-week-label">Total de la semana</td>
+                    <td className="money-cell">{renderTotalAmount(tableTotals.dolares)}</td>
+                    <td className="money-cell">{renderTotalAmount(tableTotals.pesos)}</td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </section>

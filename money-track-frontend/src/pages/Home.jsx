@@ -46,8 +46,8 @@ function Home() {
     // Saldo inicial temporal por semana y moneda
     // Después se puede guardar en PostgreSQL con una tabla weekly_balances
     const initialStoredBalances = getStoredBalances(currentWeek.year, currentWeek.week);
-    const [startingBalancePesos, setStartingBalancePesos] = useState(initialStoredBalances.pesos);
-    const [startingBalanceDolares, setStartingBalanceDolares] = useState(initialStoredBalances.dolares);
+    const [manualStartingBalancePesos, setManualStartingBalancePesos] = useState(initialStoredBalances.pesos);
+    const [manualStartingBalanceDolares, setManualStartingBalanceDolares] = useState(initialStoredBalances.dolares);
 
     // Años visibles
     const years = useMemo(() => {
@@ -79,23 +79,121 @@ function Home() {
             : 'pesos';
     };
 
-    // Renderiza importes en pesos o dólares
-    const renderCurrencyAmount = (amount, currency) => {
-        const prefix = currency === 'dolares' ? 'US$' : '$';
-        return `${prefix}${formatAmount(amount || 0)}`;
+    // Renderiza importes en pesos o dólares usando únicamente el símbolo $.
+    // Si el monto es cero, muestra -- para que la tabla sea más limpia.
+    const renderCurrencyAmount = (amount) => {
+        return Number(amount || 0) === 0 ? '--' : `$${formatAmount(amount || 0)}`;
     };
 
-    // Renderiza celdas de ingresos/egresos; si no hay importe, deja la celda vacía
-    const renderMovementAmount = (amount, currency) => {
-        return Number(amount || 0) > 0 ? renderCurrencyAmount(amount, currency) : '';
+    // Renderiza celdas de ingresos/egresos; si no hay importe, muestra --.
+    const renderMovementAmount = (amount) => {
+        return Number(amount || 0) > 0 ? renderCurrencyAmount(amount) : '--';
     };
 
-    // Carga el saldo inicial correspondiente cuando cambia el periodo o la semana
+    // Carga el saldo inicial manual correspondiente cuando cambia el periodo o la semana.
     const loadStartingBalances = (year, weekNumber) => {
         const storedBalances = getStoredBalances(year, weekNumber);
-        setStartingBalancePesos(storedBalances.pesos);
-        setStartingBalanceDolares(storedBalances.dolares);
+        setManualStartingBalancePesos(storedBalances.pesos);
+        setManualStartingBalanceDolares(storedBalances.dolares);
     };
+
+    // Obtiene el lunes de una semana ISO para poder ordenar semanas de diferentes años.
+    const getISOWeekStartDate = (year, weekNumber) => {
+        const janFourth = new Date(Date.UTC(Number(year), 0, 4));
+        const janFourthDay = janFourth.getUTCDay() || 7;
+        const firstMonday = new Date(janFourth);
+
+        firstMonday.setUTCDate(janFourth.getUTCDate() - janFourthDay + 1);
+        firstMonday.setUTCDate(firstMonday.getUTCDate() + (Number(weekNumber) - 1) * 7);
+
+        return firstMonday;
+    };
+
+    // Convierte año/semana en un valor numérico comparable.
+    const getWeekStartTime = (year, weekNumber) => {
+        return getISOWeekStartDate(year, weekNumber).getTime();
+    };
+
+    // Movimientos activos que sí participan en saldos.
+    const activeRecords = useMemo(() => {
+        return records.filter((record) => record.tipo !== 'cancelado');
+    }, [records]);
+
+    // Calcula el saldo inicial de la semana seleccionada con arrastre automático.
+    const computedInitialBalances = useMemo(() => {
+        const selectedYear = Number(period);
+        const selectedWeekNumber = Number(selectedWeek);
+        const selectedWeekStart = getWeekStartTime(selectedYear, selectedWeekNumber);
+
+        const relevantRecords = activeRecords.filter((record) => {
+            const info = getISOWeekInfo(record.fecha);
+            return getWeekStartTime(info.year, info.week) <= selectedWeekStart;
+        });
+
+        if (!relevantRecords.length) {
+            return {
+                pesos: Number(manualStartingBalancePesos || 0),
+                dolares: Number(manualStartingBalanceDolares || 0),
+                isAutomatic: false,
+                baseYear: selectedYear,
+                baseWeek: selectedWeekNumber
+            };
+        }
+
+        const sortedWeekStarts = relevantRecords
+            .map((record) => {
+                const info = getISOWeekInfo(record.fecha);
+                return {
+                    year: info.year,
+                    week: info.week,
+                    start: getWeekStartTime(info.year, info.week)
+                };
+            })
+            .sort((a, b) => a.start - b.start);
+
+        const baseWeekInfo = sortedWeekStarts[0];
+        const baseBalances = getStoredBalances(baseWeekInfo.year, baseWeekInfo.week);
+
+        const carriedBalances = relevantRecords.reduce(
+            (accumulator, record) => {
+                const info = getISOWeekInfo(record.fecha);
+                const recordWeekStart = getWeekStartTime(info.year, info.week);
+
+                if (recordWeekStart >= selectedWeekStart) {
+                    return accumulator;
+                }
+
+                const amount = Number(record.cantidad || 0);
+                const currency = normalizeCurrency(record.moneda);
+                const multiplier = record.tipo === 'ingreso' ? 1 : -1;
+
+                if (currency === 'dolares') {
+                    accumulator.dolares += amount * multiplier;
+                } else {
+                    accumulator.pesos += amount * multiplier;
+                }
+
+                return accumulator;
+            },
+            {
+                pesos: Number(baseBalances.pesos || 0),
+                dolares: Number(baseBalances.dolares || 0)
+            }
+        );
+
+        return {
+            ...carriedBalances,
+            isAutomatic: baseWeekInfo.start < selectedWeekStart,
+            baseYear: baseWeekInfo.year,
+            baseWeek: baseWeekInfo.week
+        };
+    }, [
+        activeRecords,
+        period,
+        selectedWeek,
+        manualStartingBalancePesos,
+        manualStartingBalanceDolares
+    ]);
 
 
     // Busca la última semana que sí tiene movimientos para no mostrar inicio vacío por defecto.
@@ -125,12 +223,11 @@ function Home() {
 
     // Movimientos de la semana seleccionada
     const weeklyRecords = useMemo(() => {
-        return records
+        return activeRecords
             .filter((record) => {
                 const info = getISOWeekInfo(record.fecha);
 
                 return (
-                    record.tipo !== 'cancelado' &&
                     info.year === Number(period) &&
                     info.week === Number(selectedWeek)
                 );
@@ -145,12 +242,12 @@ function Home() {
 
                 return Number(a.id) - Number(b.id);
             });
-    }, [records, period, selectedWeek]);
+    }, [activeRecords, period, selectedWeek]);
 
     // Tabla tipo Excel con saldo acumulado separado por pesos y dólares
     const cashRows = useMemo(() => {
-        const initialBalancePesos = Number(startingBalancePesos || 0);
-        const initialBalanceDolares = Number(startingBalanceDolares || 0);
+        const initialBalancePesos = Number(computedInitialBalances.pesos || 0);
+        const initialBalanceDolares = Number(computedInitialBalances.dolares || 0);
 
         // Fila inicial de la semana
         const initialRow = {
@@ -214,7 +311,7 @@ function Home() {
         );
 
         return [initialRow, ...rows];
-    }, [weeklyRecords, startingBalancePesos, startingBalanceDolares]);
+    }, [weeklyRecords, computedInitialBalances]);
 
     // Totales de la semana separados por moneda
     const totals = useMemo(() => {
@@ -250,8 +347,8 @@ function Home() {
             }
         );
 
-        const initialBalancePesos = Number(startingBalancePesos || 0);
-        const initialBalanceDolares = Number(startingBalanceDolares || 0);
+        const initialBalancePesos = Number(computedInitialBalances.pesos || 0);
+        const initialBalanceDolares = Number(computedInitialBalances.dolares || 0);
 
         return {
             ...weeklyTotals,
@@ -262,7 +359,7 @@ function Home() {
             finalBalanceDolares:
                 initialBalanceDolares + weeklyTotals.totalIngresosDolares - weeklyTotals.totalEgresosDolares
         };
-    }, [weeklyRecords, startingBalancePesos, startingBalanceDolares]);
+    }, [weeklyRecords, computedInitialBalances]);
 
     // Carga movimientos desde API
     useEffect(() => {
@@ -318,18 +415,27 @@ function Home() {
         };
     }, []);
 
-    // Guarda saldo inicial localmente por semana y moneda
+    // Guarda únicamente el saldo manual de la primera semana de trabajo.
+    // Las semanas siguientes se calculan automáticamente con el saldo final anterior.
     useEffect(() => {
+        if (computedInitialBalances.isAutomatic) return;
+
         localStorage.setItem(
             `moneyTrackSaldoInicialPesos_${period}_${selectedWeek}`,
-            startingBalancePesos || '0'
+            manualStartingBalancePesos || '0'
         );
 
         localStorage.setItem(
             `moneyTrackSaldoInicialDolares_${period}_${selectedWeek}`,
-            startingBalanceDolares || '0'
+            manualStartingBalanceDolares || '0'
         );
-    }, [period, selectedWeek, startingBalancePesos, startingBalanceDolares]);
+    }, [
+        period,
+        selectedWeek,
+        manualStartingBalancePesos,
+        manualStartingBalanceDolares,
+        computedInitialBalances.isAutomatic
+    ]);
 
     return (
         <>
@@ -339,7 +445,7 @@ function Home() {
                 <section className="page-header screenshot-style-header">
                     <div>
                         <h1>Inicio</h1>
-                        <p>Control semanal tipo Excel de caja chica, ingresos, egresos y saldo acumulado por moneda.</p>
+                        <p>Control semanal tipo Excel de caja chica, ingresos, egresos y saldo acumulado automático por moneda.</p>
                     </div>
                 </section>
 
@@ -348,12 +454,12 @@ function Home() {
                         <span>Saldo inicial</span>
                         <div className="home-currency-summary">
                             <div>
-                                <small>Pesos</small>
-                                <strong>{renderCurrencyAmount(totals.initialBalancePesos, 'pesos')}</strong>
-                            </div>
-                            <div>
                                 <small>Dólares</small>
                                 <strong>{renderCurrencyAmount(totals.initialBalanceDolares, 'dolares')}</strong>
+                            </div>
+                            <div>
+                                <small>Pesos</small>
+                                <strong>{renderCurrencyAmount(totals.initialBalancePesos, 'pesos')}</strong>
                             </div>
                         </div>
                     </div>
@@ -362,12 +468,12 @@ function Home() {
                         <span>Total ingresos</span>
                         <div className="home-currency-summary">
                             <div>
-                                <small>Pesos</small>
-                                <strong>{renderCurrencyAmount(totals.totalIngresosPesos, 'pesos')}</strong>
-                            </div>
-                            <div>
                                 <small>Dólares</small>
                                 <strong>{renderCurrencyAmount(totals.totalIngresosDolares, 'dolares')}</strong>
+                            </div>
+                            <div>
+                                <small>Pesos</small>
+                                <strong>{renderCurrencyAmount(totals.totalIngresosPesos, 'pesos')}</strong>
                             </div>
                         </div>
                     </div>
@@ -376,12 +482,12 @@ function Home() {
                         <span>Total egresos</span>
                         <div className="home-currency-summary">
                             <div>
-                                <small>Pesos</small>
-                                <strong>{renderCurrencyAmount(totals.totalEgresosPesos, 'pesos')}</strong>
-                            </div>
-                            <div>
                                 <small>Dólares</small>
                                 <strong>{renderCurrencyAmount(totals.totalEgresosDolares, 'dolares')}</strong>
+                            </div>
+                            <div>
+                                <small>Pesos</small>
+                                <strong>{renderCurrencyAmount(totals.totalEgresosPesos, 'pesos')}</strong>
                             </div>
                         </div>
                     </div>
@@ -390,12 +496,12 @@ function Home() {
                         <span>Saldo total</span>
                         <div className="home-currency-summary">
                             <div>
-                                <small>Pesos</small>
-                                <strong>{renderCurrencyAmount(totals.finalBalancePesos, 'pesos')}</strong>
-                            </div>
-                            <div>
                                 <small>Dólares</small>
                                 <strong>{renderCurrencyAmount(totals.finalBalanceDolares, 'dolares')}</strong>
+                            </div>
+                            <div>
+                                <small>Pesos</small>
+                                <strong>{renderCurrencyAmount(totals.finalBalancePesos, 'pesos')}</strong>
                             </div>
                         </div>
                     </div>
@@ -407,6 +513,11 @@ function Home() {
                             <h2>Control semanal</h2>
                             <p className="home-card-subtitle">
                                 Semana {getWeekLabel(Number(period), Number(selectedWeek))}
+                            </p>
+                            <p className="home-auto-balance-note">
+                                {computedInitialBalances.isAutomatic
+                                    ? `Saldo inicial calculado desde la semana ${computedInitialBalances.baseWeek} del ${computedInitialBalances.baseYear}.`
+                                    : 'Esta semana usa saldo inicial manual como punto de partida.'}
                             </p>
                         </div>
                     </div>
@@ -455,19 +566,6 @@ function Home() {
                             </div>
 
                             <div className="filter-box">
-                                <label htmlFor="startingBalancePesos">Saldo inicial en pesos</label>
-                                <input
-                                    id="startingBalancePesos"
-                                    className="filter-control"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={startingBalancePesos}
-                                    onChange={(event) => setStartingBalancePesos(event.target.value)}
-                                />
-                            </div>
-
-                            <div className="filter-box">
                                 <label htmlFor="startingBalanceDolares">Saldo inicial en dólares</label>
                                 <input
                                     id="startingBalanceDolares"
@@ -475,10 +573,40 @@ function Home() {
                                     type="number"
                                     min="0"
                                     step="0.01"
-                                    value={startingBalanceDolares}
-                                    onChange={(event) => setStartingBalanceDolares(event.target.value)}
+                                    value={
+                                        computedInitialBalances.isAutomatic
+                                            ? computedInitialBalances.dolares
+                                            : manualStartingBalanceDolares
+                                    }
+                                    disabled={computedInitialBalances.isAutomatic}
+                                    onChange={(event) => setManualStartingBalanceDolares(event.target.value)}
                                 />
                             </div>
+
+                            <div className="filter-box">
+                                <label htmlFor="startingBalancePesos">Saldo inicial en pesos</label>
+                                <input
+                                    id="startingBalancePesos"
+                                    className="filter-control"
+                                    type="number"
+                                    min="0"
+                                    step="0.01"
+                                    value={
+                                        computedInitialBalances.isAutomatic
+                                            ? computedInitialBalances.pesos
+                                            : manualStartingBalancePesos
+                                    }
+                                    disabled={computedInitialBalances.isAutomatic}
+                                    onChange={(event) => setManualStartingBalancePesos(event.target.value)}
+                                />
+                            </div>
+
+                            {computedInitialBalances.isAutomatic && (
+                                <div className="home-balance-auto-chip">
+                                    <span className="material-icons-outlined">sync_alt</span>
+                                    Saldo inicial automático
+                                </div>
+                            )}
                         </div>
                     </div>
 
@@ -495,12 +623,12 @@ function Home() {
                                         <th colSpan="2" className="home-th-balance">Saldo</th>
                                     </tr>
                                     <tr className="home-currency-head">
-                                        <th>Pesos</th>
                                         <th>Dólares</th>
                                         <th>Pesos</th>
                                         <th>Dólares</th>
                                         <th>Pesos</th>
                                         <th>Dólares</th>
+                                        <th>Pesos</th>
                                     </tr>
                                 </thead>
 
@@ -524,12 +652,12 @@ function Home() {
                                                     <td>{row.fecha}</td>
                                                     <td>{row.folio}</td>
                                                     <td>{row.descripcion}</td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td></td>
-                                                    <td>{renderCurrencyAmount(row.saldoPesos, 'pesos')}</td>
+                                                    <td>--</td>
+                                                    <td>--</td>
+                                                    <td>--</td>
+                                                    <td>--</td>
                                                     <td>{renderCurrencyAmount(row.saldoDolares, 'dolares')}</td>
+                                                    <td>{renderCurrencyAmount(row.saldoPesos, 'pesos')}</td>
                                                 </tr>
                                             ))}
 
@@ -554,12 +682,12 @@ function Home() {
                                                 <td>{row.fecha}</td>
                                                 <td>{row.folio}</td>
                                                 <td>{row.descripcion}</td>
-                                                <td>{renderMovementAmount(row.ingresoPesos, 'pesos')}</td>
                                                 <td>{renderMovementAmount(row.ingresoDolares, 'dolares')}</td>
-                                                <td>{renderMovementAmount(row.egresoPesos, 'pesos')}</td>
+                                                <td>{renderMovementAmount(row.ingresoPesos, 'pesos')}</td>
                                                 <td>{renderMovementAmount(row.egresoDolares, 'dolares')}</td>
-                                                <td>{renderCurrencyAmount(row.saldoPesos, 'pesos')}</td>
+                                                <td>{renderMovementAmount(row.egresoPesos, 'pesos')}</td>
                                                 <td>{renderCurrencyAmount(row.saldoDolares, 'dolares')}</td>
+                                                <td>{renderCurrencyAmount(row.saldoPesos, 'pesos')}</td>
                                             </tr>
                                         ))
                                     )}
@@ -568,12 +696,12 @@ function Home() {
                                 <tfoot>
                                     <tr>
                                         <td colSpan="3">Totales de la semana</td>
-                                        <td>{renderCurrencyAmount(totals.totalIngresosPesos, 'pesos')}</td>
                                         <td>{renderCurrencyAmount(totals.totalIngresosDolares, 'dolares')}</td>
-                                        <td>{renderCurrencyAmount(totals.totalEgresosPesos, 'pesos')}</td>
+                                        <td>{renderCurrencyAmount(totals.totalIngresosPesos, 'pesos')}</td>
                                         <td>{renderCurrencyAmount(totals.totalEgresosDolares, 'dolares')}</td>
-                                        <td>{renderCurrencyAmount(totals.finalBalancePesos, 'pesos')}</td>
+                                        <td>{renderCurrencyAmount(totals.totalEgresosPesos, 'pesos')}</td>
                                         <td>{renderCurrencyAmount(totals.finalBalanceDolares, 'dolares')}</td>
+                                        <td>{renderCurrencyAmount(totals.finalBalancePesos, 'pesos')}</td>
                                     </tr>
                                 </tfoot>
                             </table>

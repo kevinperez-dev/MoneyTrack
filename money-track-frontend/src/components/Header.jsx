@@ -75,10 +75,10 @@ function Header({
     return (
         <header className="topbar">
             <div className="topbar-left">
-                <div className="brand">
+                <Link to="/inicio" className="brand" aria-label="Ir a Inicio">
                     <img src="/logo-sinFondo.png" alt="Logo" className="brand-logo" />
-                    <span className="brand-name">MoneyTrack</span>
-                </div>
+                    <span className="brand-name">SnoopyProject</span>
+                </Link>
 
                 <nav className="top-nav">
                     <Link
@@ -154,7 +154,7 @@ function Header({
                                 onClick={() => handleReportClick('cancelado')}
                             >
                                 <span className="material-icons-outlined">block</span>
-                                Cancelados
+                                Historial
                             </button>
                         </div>
                     </div>

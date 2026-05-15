@@ -24,16 +24,16 @@ import {
 
 const CURRENCY_OPTIONS = [
   {
+    value: 'Dolares',
+    label: 'Dólares',
+    symbol: '$',
+    helper: 'Dólares'
+  },
+  {
     value: 'Pesos',
     label: 'Pesos',
     symbol: '$',
-    helper: 'MXN'
-  },
-  {
-    value: 'Dolares',
-    label: 'Dólares',
-    symbol: 'US$',
-    helper: 'USD'
+    helper: 'Moneda nacional'
   }
 ];
 
@@ -50,12 +50,9 @@ function isCurrencySelected(currentCurrency, optionCurrency) {
   return normalizeCurrencyName(currentCurrency) === normalizeCurrencyName(optionCurrency);
 }
 
-// Propósito: dar formato a los importes usando el símbolo correcto según la moneda seleccionada.
-function formatMoneyByCurrency(amount, currency) {
-  const normalizedCurrency = normalizeCurrencyName(currency);
-  const symbol = normalizedCurrency.includes('dolar') || normalizedCurrency.includes('usd') ? 'US$' : '$';
-
-  return `${symbol}${formatAmount(amount || 0)}`;
+// Propósito: dar formato a los importes usando únicamente el símbolo $ para ambas monedas.
+function formatMoneyByCurrency(amount) {
+  return `$${formatAmount(amount || 0)}`;
 }
 
 // Propósito: identificar si el movimiento pertenece a pesos o dólares para separarlo en columnas.
@@ -169,15 +166,6 @@ function moneyChangedInLastAdjustment(record) {
 }
 
 
-// Propósito: calcular la diferencia de una fila del historial completo de ajustes.
-function getHistoryAdjustmentDifference(editRow) {
-  const currentAmount = Number(editRow.cantidad_nueva || 0);
-  const previousAmount = Number(editRow.cantidad_anterior || 0);
-  const difference = currentAmount - previousAmount;
-  const sign = difference >= 0 ? '+' : '-';
-
-  return `${sign}${formatMoneyByCurrency(Math.abs(difference), editRow.moneda_nueva)}`;
-}
 
 // Propósito: formatear fecha y hora de edición para mostrarla en el historial.
 function formatEditDateTime(dateValue) {
@@ -202,7 +190,7 @@ const REPORT_SECTIONS = {
     title: 'Reporte de Ingresos',
     plural: 'Ingresos',
     singular: 'ingreso',
-    description: 'Consulta, modifica, cancela y exporta únicamente los movimientos de ingreso.',
+    description: 'Consulta, modifica, cancela y exporta únicamente los ingresos.',
     icon: 'south_west',
     headerColor: '#86DFE6',
     fileName: 'reporte_ingresos',
@@ -212,21 +200,21 @@ const REPORT_SECTIONS = {
     title: 'Reporte de Egresos',
     plural: 'Egresos',
     singular: 'egreso',
-    description: 'Consulta, modifica, cancela y exporta únicamente los movimientos de egreso.',
+    description: 'Consulta, modifica, cancela y exporta únicamente los egresos.',
     icon: 'north_east',
     headerColor: '#F0DC84',
     fileName: 'reporte_egresos',
     sheetName: 'Egresos'
   },
   cancelado: {
-    title: 'Reporte de Cancelados',
-    plural: 'Cancelados',
-    singular: 'cancelado',
-    description: 'Consulta los movimientos cancelados. Se conservan para visibilidad, pero no cuentan en saldos.',
+    title: 'Reporte de Historial',
+    plural: 'Historial',
+    singular: 'historial',
+    description: 'Consulta movimientos cancelados y cambios realizados.',
     icon: 'block',
     headerColor: '#FCA5A5',
-    fileName: 'reporte_cancelados',
-    sheetName: 'Cancelados'
+    fileName: 'reporte_historial',
+    sheetName: 'Historial'
   }
 };
 
@@ -241,7 +229,7 @@ function Reports({ reportType = 'ingreso' }) {
   // Propósito: tipo de reporte que viene desde la ruta.
   const activeReportType = getSafeReportType(reportType);
 
-  // Propósito: registros principales cargados desde PostgreSQL.
+  // Propósito: registros principales cargados.
   const [records, setRecords] = useState([]);
 
   // Propósito: estados de carga, errores y notificaciones.
@@ -260,11 +248,15 @@ function Reports({ reportType = 'ingreso' }) {
     nombre: '',
     descripcion: '',
     cantidad: '',
-    moneda: ''
+    moneda: '',
+    comentario: ''
   });
 
   // Propósito: estado del modal que muestra el último ajuste de monto.
   const [selectedAdjustmentRecord, setSelectedAdjustmentRecord] = useState(null);
+
+  // Propósito: movimiento pendiente de confirmación antes de cancelar.
+  const [cancelCandidate, setCancelCandidate] = useState(null);
 
   // Propósito: historial completo de ajustes, visible en Reportes > Cancelados.
   const [editHistoryRows, setEditHistoryRows] = useState([]);
@@ -327,19 +319,15 @@ function Reports({ reportType = 'ingreso' }) {
       const filterCurrency = appliedFilters.currency;
       const filterAmount = appliedFilters.amount.trim();
 
-      // Propósito: conservar visible una fila recién cancelada dentro del apartado donde estaba hasta recargar.
-      const tipoParaFiltrar =
-        record.tipo === 'cancelado' && record.tipoVistaOriginal
-          ? record.tipoVistaOriginal
-          : record.tipo;
+      // Propósito: cada apartado muestra su tipo actual.
+      // Si se acaba de cancelar desde ingresos/egresos, se conserva visible temporalmente
+      // en la vista actual para que el usuario vea la fila pintada en rojo.
+      const shouldKeepRecentlyCanceledVisible =
+        record.tipo === 'cancelado' &&
+        record.__justCanceled === true &&
+        record.__previousReportType === activeReportType;
 
-      // Propósito: en reportes de cancelados mostrar únicamente cancelados.
-      if (activeReportType === 'cancelado' && record.tipo !== 'cancelado') {
-        return false;
-      }
-
-      // Propósito: en ingresos/egresos respetar el apartado activo.
-      if (activeReportType !== 'cancelado' && tipoParaFiltrar !== activeReportType) {
+      if (record.tipo !== activeReportType && !shouldKeepRecentlyCanceledVisible) {
         return false;
       }
 
@@ -387,7 +375,37 @@ function Reports({ reportType = 'ingreso' }) {
     });
   }, [records, appliedFilters, activeReportType]);
 
-  // Propósito: proteger la vista y cargar reportes desde la API.
+  // Propósito: calcular totales de la tabla visible sin considerar movimientos cancelados.
+  const reportTableTotals = useMemo(() => {
+    return filteredRows.reduce(
+      (accumulator, record) => {
+        if (record.tipo === 'cancelado') {
+          return accumulator;
+        }
+
+        const amountValue = Number(record.cantidad || 0);
+
+        if (isDollarCurrency(record.moneda)) {
+          accumulator.dolares += amountValue;
+        } else {
+          accumulator.pesos += amountValue;
+        }
+
+        return accumulator;
+      },
+      {
+        dolares: 0,
+        pesos: 0
+      }
+    );
+  }, [filteredRows]);
+
+  // Propósito: mostrar totales con formato de dinero o -- cuando el total sea cero.
+  const renderReportTotalAmount = (amountValue) => {
+    return Number(amountValue || 0) > 0 ? formatMoneyByCurrency(amountValue) : '--';
+  };
+
+  // Propósito: proteger la vista y cargar reportes.
   useEffect(() => {
     if (!isAuthenticated()) {
       navigate('/login', { replace: true });
@@ -404,8 +422,8 @@ function Reports({ reportType = 'ingreso' }) {
       } catch (error) {
         setApiError(error.message);
         setToast({
-          title: 'Error',
-          text: 'No se pudieron cargar los reportes desde PostgreSQL.',
+          title: 'Aviso',
+          text: 'No se pudieron cargar los reportes. Intenta nuevamente.',
           type: 'error'
         });
       } finally {
@@ -497,7 +515,8 @@ function Reports({ reportType = 'ingreso' }) {
       nombre: record.nombre,
       descripcion: record.descripcion,
       cantidad: String(record.cantidad),
-      moneda: record.moneda
+      moneda: record.moneda,
+      comentario: ''
     });
   };
 
@@ -513,13 +532,9 @@ function Reports({ reportType = 'ingreso' }) {
       nombre: '',
       descripcion: '',
       cantidad: '',
-      moneda: ''
+      moneda: '',
+      comentario: ''
     });
-  };
-
-  // Propósito: abrir el modal con el detalle del último ajuste.
-  const openAdjustmentModal = (record) => {
-    setSelectedAdjustmentRecord(record);
   };
 
   // Propósito: cerrar el modal de detalle del ajuste.
@@ -538,11 +553,12 @@ function Reports({ reportType = 'ingreso' }) {
       !editForm.nombre.trim() ||
       !editForm.descripcion.trim() ||
       Number(editForm.cantidad) <= 0 ||
-      !editForm.moneda
+      !editForm.moneda ||
+      !editForm.comentario.trim()
     ) {
       setToast({
-        title: 'Error',
-        text: 'Completa todos los campos antes de guardar la modificación.',
+        title: 'Aviso',
+        text: 'Completa todos los campos y escribe el motivo del cambio.',
         type: 'error'
       });
       return;
@@ -557,7 +573,8 @@ function Reports({ reportType = 'ingreso' }) {
       nombre: editForm.nombre.trim(),
       descripcion: editForm.descripcion.trim(),
       cantidad: Number(editForm.cantidad),
-      moneda: editForm.moneda
+      moneda: editForm.moneda,
+      comentario: editForm.comentario.trim()
     };
 
     try {
@@ -575,15 +592,15 @@ function Reports({ reportType = 'ingreso' }) {
       setToast({
         title: 'Movimiento actualizado',
         text: hasAmountAdjustment(updatedRecord)
-          ? 'Los cambios se guardaron y el ajuste de monto quedó registrado.'
-          : 'Los cambios se guardaron correctamente.',
+          ? 'Cambios guardados. El ajuste quedó registrado.'
+          : 'Cambios guardados.',
         type: 'success'
       });
 
       closeEditModal();
     } catch (error) {
       setToast({
-        title: 'Error',
+        title: 'Aviso',
         text: error.message,
         type: 'error'
       });
@@ -592,28 +609,41 @@ function Reports({ reportType = 'ingreso' }) {
     }
   };
 
-  // Propósito: cancelar el movimiento seleccionado después de confirmar con el usuario.
-  const removeMovement = async (record) => {
-    const confirmed = window.confirm(
-      `¿Seguro que deseas cancelar el movimiento con folio ${record.folio}? Esta acción no se puede deshacer.`
-    );
+  // Propósito: abrir un modal formal antes de cancelar el movimiento seleccionado.
+  const openCancelModal = (record) => {
+    if (!record || deletingId) return;
 
-    if (!confirmed) return;
+    setCancelCandidate(record);
+  };
+
+  // Propósito: cerrar el modal de cancelación sin modificar el movimiento.
+  const closeCancelModal = () => {
+    if (deletingId) return;
+
+    setCancelCandidate(null);
+  };
+
+  // Propósito: cancelar el movimiento después de confirmar desde el modal.
+  const confirmCancelMovement = async () => {
+    if (!cancelCandidate) return;
+
+    const record = cancelCandidate;
 
     try {
       setDeletingId(record.id);
 
       const canceledRecord = await deleteMovement(record.id);
 
-      // Propósito: actualizar el registro sin borrarlo de PostgreSQL y conservarlo visible hasta recargar.
+      // Propósito: marcarlo como cancelado y dejarlo visible temporalmente en rojo.
+      // Al recargar o cambiar de pestaña, desaparecerá de ingresos/egresos porque ya será tipo = cancelado.
       setRecords((currentRecords) =>
         currentRecords.map((currentRecord) =>
           currentRecord.id === record.id
             ? {
                 ...currentRecord,
                 ...canceledRecord,
-                tipo: 'cancelado',
-                tipoVistaOriginal: currentRecord.tipo,
+                __justCanceled: activeReportType !== 'cancelado',
+                __previousReportType: currentRecord.tipo,
               }
             : currentRecord
         )
@@ -621,18 +651,123 @@ function Reports({ reportType = 'ingreso' }) {
 
       setToast({
         title: 'Movimiento cancelado',
-        text: 'El registro se marcó como cancelado y se conserva para visibilidad.',
+        text: 'Movimiento cancelado. Se marcará en rojo por un momento y después aparecerá en Historial.',
         type: 'success'
       });
+
+      setCancelCandidate(null);
     } catch (error) {
       setToast({
-        title: 'Error',
+        title: 'Aviso',
         text: error.message,
         type: 'error'
       });
     } finally {
       setDeletingId(null);
     }
+  };
+
+  // Propósito: imprimir únicamente el movimiento seleccionado desde Reportes.
+  const printMovement = (record) => {
+    const printWindow = window.open('', '_blank', 'width=520,height=720');
+
+    if (!printWindow) {
+      setToast({
+        title: 'Aviso',
+        text: 'No se pudo abrir la impresión. Permite las ventanas emergentes e intenta de nuevo.',
+        type: 'error'
+      });
+      return;
+    }
+
+    const info = getISOWeekInfo(record.fecha);
+    const dollarAmount = getAmountForCurrencyColumn(record, 'Dólares');
+    const pesoAmount = getAmountForCurrencyColumn(record, 'Pesos');
+    const tipoTexto = record.tipo === 'cancelado'
+      ? 'Cancelado'
+      : record.tipo === 'egreso'
+        ? 'Egreso'
+        : 'Ingreso';
+
+    printWindow.document.write(`
+      <!doctype html>
+      <html lang="es">
+        <head>
+          <meta charset="utf-8" />
+          <title>Movimiento ${record.folio}</title>
+          <style>
+            body {
+              font-family: Arial, sans-serif;
+              margin: 24px;
+              color: #111827;
+            }
+
+            .print-card {
+              border: 1px solid #d1d5db;
+              border-radius: 14px;
+              padding: 20px;
+            }
+
+            h1 {
+              margin: 0 0 4px;
+              font-size: 20px;
+            }
+
+            .subtitle {
+              margin: 0 0 18px;
+              color: #6b7280;
+              font-size: 13px;
+            }
+
+            table {
+              width: 100%;
+              border-collapse: collapse;
+              margin-top: 12px;
+            }
+
+            th,
+            td {
+              border: 1px solid #e5e7eb;
+              padding: 10px;
+              text-align: left;
+              font-size: 13px;
+            }
+
+            th {
+              width: 34%;
+              background: #f3f4f6;
+            }
+
+            .money {
+              font-weight: 700;
+            }
+          </style>
+        </head>
+        <body>
+          <section class="print-card">
+            <h1>MoneyTrack</h1>
+            <p class="subtitle">Detalle de movimiento</p>
+
+            <table>
+              <tbody>
+                <tr><th>Tipo</th><td>${tipoTexto}</td></tr>
+                <tr><th>Sem</th><td>${info.week}</td></tr>
+                <tr><th>Folio</th><td>${record.folio || ''}</td></tr>
+                <tr><th>Fecha</th><td>${formatShortDate(record.fecha)}</td></tr>
+                <tr><th>Nombre</th><td>${record.nombre || ''}</td></tr>
+                <tr><th>Concepto</th><td>${record.descripcion || ''}</td></tr>
+                <tr><th>Dólares</th><td class="money">${dollarAmount}</td></tr>
+                <tr><th>Pesos</th><td class="money">${pesoAmount}</td></tr>
+              </tbody>
+            </table>
+          </section>
+        </body>
+      </html>
+    `);
+
+    printWindow.document.close();
+    printWindow.focus();
+    printWindow.print();
   };
 
   // Propósito: aplicar los filtros actuales al listado.
@@ -678,8 +813,8 @@ function Reports({ reportType = 'ingreso' }) {
   const exportReportTable = () => {
     if (!filteredRows.length) {
       setToast({
-        title: 'Error',
-        text: `No hay registros de ${activeSection.plural.toLowerCase()} para exportar con los filtros actuales.`,
+        title: 'Aviso',
+        text: `No hay ${activeSection.plural.toLowerCase()} para exportar con los filtros actuales.`,
         type: 'error'
       });
       return;
@@ -709,7 +844,7 @@ function Reports({ reportType = 'ingreso' }) {
 
     setToast({
       title: 'Exportación completada',
-      text: `El reporte de ${activeSection.plural.toLowerCase()} se exportó correctamente.`,
+      text: `Reporte de ${activeSection.plural.toLowerCase()} exportado.`,
       type: 'success'
     });
   };
@@ -733,7 +868,7 @@ function Reports({ reportType = 'ingreso' }) {
           <div className="card-header reports-header-row">
             <div>
               <h2>Detalle de {activeSection.plural}</h2>
-              <p className="report-section-description">Solo se muestran movimientos de tipo {activeSection.singular}.</p>
+              <p className="report-section-description">Solo se muestran {activeSection.plural.toLowerCase()}.</p>
             </div>
 
             <div className="reports-header-actions">
@@ -840,8 +975,8 @@ function Reports({ reportType = 'ingreso' }) {
                 onChange={(event) => setCurrency(event.target.value)}
               >
                 <option value="todos">Todas</option>
-                <option value="Pesos">Pesos</option>
                 <option value="Dolares">Dólares</option>
+                <option value="Pesos">Pesos</option>
               </select>
             </div>
 
@@ -879,7 +1014,7 @@ function Reports({ reportType = 'ingreso' }) {
                   <th>Concepto</th>
                   <th>Dólares</th>
                   <th>Pesos</th>
-                  <th>Acciones</th>
+                  <th className="report-actions-header">Acciones</th>
                 </tr>
               </thead>
 
@@ -887,7 +1022,7 @@ function Reports({ reportType = 'ingreso' }) {
                 {isLoading ? (
                   <tr>
                     <td colSpan={mainTableColSpan} style={{ textAlign: 'center', padding: '18px' }}>
-                      Cargando reporte de {activeSection.plural.toLowerCase()} desde PostgreSQL...
+                      Cargando {activeSection.plural.toLowerCase()}...
                     </td>
                   </tr>
                 ) : apiError ? (
@@ -899,7 +1034,7 @@ function Reports({ reportType = 'ingreso' }) {
                 ) : filteredRows.length === 0 ? (
                   <tr>
                     <td colSpan={mainTableColSpan} style={{ textAlign: 'center', padding: '18px' }}>
-                      No se encontraron registros de {activeSection.plural.toLowerCase()} para los filtros aplicados.
+                      No hay {activeSection.plural.toLowerCase()} con los filtros seleccionados.
                     </td>
                   </tr>
                 ) : (
@@ -918,54 +1053,46 @@ function Reports({ reportType = 'ingreso' }) {
                         <td>{record.folio}</td>
                         <td>{formatShortDate(record.fecha)}</td>
                         <td>{record.nombre}</td>
-                        <td>{record.descripcion}</td>
+                        <td className="concept-cell">{record.descripcion}</td>
                         <td className="money-cell">{getAmountForCurrencyColumn(record, 'Dólares')}</td>
                         <td className="money-cell">{getAmountForCurrencyColumn(record, 'Pesos')}</td>
-                        <td>
-                          <div className="report-row-actions">
-                            {hasAmountAdjustment(record) && (
-                              <button
-                                type="button"
-                                className="btn-icon-action btn-adjustment-row"
-                                onClick={() => openAdjustmentModal(record)}
-                                title="Ver último ajuste"
-                              >
-                                <span className="material-icons-outlined">visibility</span>
-                                Ver ajuste
-                              </button>
-                            )}
-
-                            {!isCanceledReport && (
-                              <>
+                        <td className="report-actions-cell">
+                          <div className="report-row-actions" aria-label="Acciones del movimiento">
+                            <>
                                 <button
                                   type="button"
                                   className="btn-icon-action btn-edit-row"
                                   onClick={() => openEditModal(record)}
                                   disabled={Boolean(deletingId) || record.tipo === 'cancelado'}
-                                  title="Modificar movimiento"
+                                  title="Editar movimiento"
+                                  aria-label="Editar movimiento"
                                 >
                                   <span className="material-icons-outlined">edit</span>
-                                  Editar
+                                </button>
+
+                                <button
+                                  type="button"
+                                  className="btn-icon-action btn-print-row"
+                                  onClick={() => printMovement(record)}
+                                  title="Imprimir movimiento"
+                                  aria-label="Imprimir movimiento"
+                                >
+                                  <span className="material-icons-outlined">print</span>
                                 </button>
 
                                 <button
                                   type="button"
                                   className="btn-icon-action btn-delete-row"
-                                  onClick={() => removeMovement(record)}
+                                  onClick={() => openCancelModal(record)}
                                   disabled={Boolean(deletingId) || record.tipo === 'cancelado'}
                                   title="Cancelar movimiento"
+                                  aria-label="Cancelar movimiento"
                                 >
                                   <span className="material-icons-outlined">
                                     {isDeletingCurrentRow ? 'hourglass_top' : 'block'}
                                   </span>
-                                  {record.tipo === 'cancelado' ? 'Cancelado' : isDeletingCurrentRow ? 'Cancelando' : 'Cancelar'}
                                 </button>
                               </>
-                            )}
-
-                            {isCanceledReport && !hasAmountAdjustment(record) && (
-                              <span className="empty-adjustment-cell">—</span>
-                            )}
                           </div>
                         </td>
                       </tr>
@@ -973,6 +1100,17 @@ function Reports({ reportType = 'ingreso' }) {
                   })
                 )}
               </tbody>
+
+              {!isLoading && !apiError && filteredRows.length > 0 && (
+                <tfoot>
+                  <tr className="history-total-row report-total-row">
+                    <td colSpan="5" className="total-week-label">Total de la semana</td>
+                    <td className="money-cell">{renderReportTotalAmount(reportTableTotals.dolares)}</td>
+                    <td className="money-cell">{renderReportTotalAmount(reportTableTotals.pesos)}</td>
+                    <td className="report-actions-cell"></td>
+                  </tr>
+                </tfoot>
+              )}
             </table>
           </div>
         </section>
@@ -983,7 +1121,7 @@ function Reports({ reportType = 'ingreso' }) {
               <div>
                 <h2>Historial de ediciones</h2>
                 <p className="report-section-description">
-                  Ediciones registradas en el sistema. Se muestran los cambios guardados para revisión.
+                  Cambios guardados para revisión.
                 </p>
               </div>
             </div>
@@ -997,9 +1135,9 @@ function Reports({ reportType = 'ingreso' }) {
                     <th>Fecha</th>
                     <th>Nombre</th>
                     <th>Concepto</th>
-                    <th>Monto anterior</th>
-                    <th>Monto nuevo</th>
-                    <th>Diferencia</th>
+                    <th>Comentario</th>
+                    <th>Dólares</th>
+                    <th>Pesos</th>
                     <th>Fecha ajuste</th>
                   </tr>
                 </thead>
@@ -1008,7 +1146,7 @@ function Reports({ reportType = 'ingreso' }) {
                   {isEditHistoryLoading ? (
                     <tr>
                       <td colSpan="9" style={{ textAlign: 'center', padding: '18px' }}>
-                        Cargando historial de ajustes...
+                        Cargando historial...
                       </td>
                     </tr>
                   ) : editHistoryError ? (
@@ -1020,29 +1158,55 @@ function Reports({ reportType = 'ingreso' }) {
                   ) : editHistoryRows.length === 0 ? (
                     <tr>
                       <td colSpan="9" style={{ textAlign: 'center', padding: '18px' }}>
-                        No hay historial de ediciones registrado todavía.
+                        Todavía no hay cambios registrados.
                       </td>
                     </tr>
                   ) : (
                     editHistoryRows.map((editRow) => {
                       const info = getISOWeekInfo(editRow.fecha);
+                      const hasNewAmount =
+                        editRow.cantidad_nueva !== null &&
+                        editRow.cantidad_nueva !== undefined &&
+                        editRow.moneda_nueva;
+                      const isDollarEdit = hasNewAmount && isDollarCurrency(editRow.moneda_nueva);
 
                       return (
                         <tr key={editRow.edit_id}>
+                          {/* Propósito: mostrar únicamente el número de semana. */}
                           <td>{info.week}</td>
+
+                          {/* Propósito: conservar el folio del movimiento editado. */}
                           <td>{editRow.folio}</td>
+
+                          {/* Propósito: mostrar la fecha corta del movimiento original. */}
                           <td>{formatShortDate(editRow.fecha)}</td>
+
+                          {/* Propósito: mostrar el nombre actual del movimiento. */}
                           <td>{editRow.nombre}</td>
+
+                          {/* Propósito: mostrar el concepto actual del movimiento. */}
                           <td>{editRow.descripcion}</td>
+
+                          {/* Propósito: mostrar el comentario capturado en la edición, si existe. */}
+                          <td className="edit-history-comment-cell">
+                            {editRow.comentario || '—'}
+                          </td>
+
+                          {/* Propósito: mostrar el monto nuevo solo si pertenece a dólares. */}
                           <td className="money-cell">
-                            {formatMoneyByCurrency(editRow.cantidad_anterior, editRow.moneda_anterior)}
+                            {isDollarEdit
+                              ? formatMoneyByCurrency(editRow.cantidad_nueva, editRow.moneda_nueva)
+                              : '—'}
                           </td>
+
+                          {/* Propósito: mostrar el monto nuevo solo si pertenece a pesos. */}
                           <td className="money-cell">
-                            {formatMoneyByCurrency(editRow.cantidad_nueva, editRow.moneda_nueva)}
+                            {hasNewAmount && !isDollarEdit
+                              ? formatMoneyByCurrency(editRow.cantidad_nueva, editRow.moneda_nueva)
+                              : '—'}
                           </td>
-                          <td className="money-cell edit-history-difference">
-                            {getHistoryAdjustmentDifference(editRow)}
-                          </td>
+
+                          {/* Propósito: mostrar cuándo se guardó el ajuste. */}
                           <td>{formatEditDateTime(editRow.edited_at)}</td>
                         </tr>
                       );
@@ -1060,7 +1224,7 @@ function Reports({ reportType = 'ingreso' }) {
           <form className="report-modal-card" onSubmit={saveEditedMovement}>
             <div className="report-modal-header">
               <div>
-                <h2>Modificar movimiento</h2>
+                <h2>Editar movimiento</h2>
                 <p>Actualiza la información del folio {editingRecord.folio}.</p>
               </div>
 
@@ -1167,6 +1331,17 @@ function Reports({ reportType = 'ingreso' }) {
                   onChange={(event) => updateEditForm('descripcion', event.target.value)}
                 />
               </div>
+
+              <div className="filter-box report-modal-wide">
+                <label htmlFor="editComentario">Motivo del cambio *</label>
+                <textarea
+                  id="editComentario"
+                  className="filter-control report-modal-textarea"
+                  placeholder="Explica brevemente por qué se realizó el ajuste"
+                  value={editForm.comentario}
+                  onChange={(event) => updateEditForm('comentario', event.target.value)}
+                />
+              </div>
             </div>
 
             <div className="report-modal-actions">
@@ -1183,19 +1358,99 @@ function Reports({ reportType = 'ingreso' }) {
                 <span className="material-icons-outlined">
                   {isUpdating ? 'hourglass_top' : 'save'}
                 </span>
-                {isUpdating ? 'Guardando...' : 'Guardar cambios'}
+                {isUpdating ? 'Guardando...' : 'Guardar'}
               </button>
             </div>
           </form>
         </div>
       )}
 
+      {cancelCandidate && (
+        <div className="report-modal-backdrop" role="presentation">
+          <section
+            className="report-modal-card cancel-confirm-modal-card"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="cancelConfirmTitle"
+          >
+            <div className="cancel-confirm-top">
+              <div className="cancel-confirm-icon">
+                <span className="material-icons-outlined">warning</span>
+              </div>
+
+              <button
+                type="button"
+                className="report-modal-close"
+                onClick={closeCancelModal}
+                disabled={Boolean(deletingId)}
+                aria-label="Cerrar confirmación de cancelación"
+              >
+                <span className="material-icons-outlined">close</span>
+              </button>
+            </div>
+
+            <div className="cancel-confirm-content">
+              <h2 id="cancelConfirmTitle">Cancelar movimiento</h2>
+              <p>
+                Este movimiento se marcará como cancelado. Lo verás en rojo por un momento y después aparecerá en Historial.
+              </p>
+            </div>
+
+            <div className="cancel-confirm-summary">
+              <div>
+                <span>Folio</span>
+                <strong>{cancelCandidate.folio}</strong>
+              </div>
+
+              <div>
+                <span>Tipo</span>
+                <strong>{getTypeLabel(cancelCandidate.tipo)}</strong>
+              </div>
+
+              <div>
+                <span>Fecha</span>
+                <strong>{formatShortDate(cancelCandidate.fecha)}</strong>
+              </div>
+
+              <div>
+                <span>Monto</span>
+                <strong>{formatMoneyByCurrency(cancelCandidate.cantidad)}</strong>
+              </div>
+            </div>
+
+            <div className="cancel-confirm-actions">
+              <button
+                type="button"
+                className="btn btn-secondary"
+                onClick={closeCancelModal}
+                disabled={Boolean(deletingId)}
+              >
+                Conservar
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-danger-formal"
+                onClick={confirmCancelMovement}
+                disabled={Boolean(deletingId)}
+              >
+                <span className="material-icons-outlined">
+                  {deletingId === cancelCandidate.id ? 'hourglass_top' : 'block'}
+                </span>
+                {deletingId === cancelCandidate.id ? 'Cancelando...' : 'Cancelar movimiento'}
+              </button>
+            </div>
+          </section>
+        </div>
+      )}
+
+
       {selectedAdjustmentRecord && (
         <div className="report-modal-backdrop" role="presentation">
           <section className="report-modal-card adjustment-modal-card">
             <div className="report-modal-header">
               <div>
-                <h2>Detalle del ajuste</h2>
+                <h2>Detalle del cambio</h2>
                 <p>Folio {selectedAdjustmentRecord.folio}</p>
               </div>
 
@@ -1203,7 +1458,7 @@ function Reports({ reportType = 'ingreso' }) {
                 type="button"
                 className="report-modal-close"
                 onClick={closeAdjustmentModal}
-                aria-label="Cerrar detalle del ajuste"
+                aria-label="Cerrar detalle del cambio"
               >
                 <span className="material-icons-outlined">close</span>
               </button>
@@ -1269,13 +1524,22 @@ function Reports({ reportType = 'ingreso' }) {
               </div>
 
               <div className="adjustment-detail-box">
-                <span>Última edición</span>
+                <span>Fecha del cambio</span>
                 <strong>{formatShortDate(selectedAdjustmentRecord.fecha_ultima_edicion)}</strong>
               </div>
 
               <div className="adjustment-detail-box adjustment-detail-difference">
                 <span>Diferencia</span>
                 <strong>{getAdjustmentDifference(selectedAdjustmentRecord)}</strong>
+              </div>
+
+              <div className="adjustment-detail-box adjustment-detail-comment">
+                <span>Motivo del cambio</span>
+                <strong>
+                  {selectedAdjustmentRecord.comentario_ultima_edicion ||
+                    selectedAdjustmentRecord.comentario ||
+                    'Sin motivo capturado'}
+                </strong>
               </div>
             </div>
 

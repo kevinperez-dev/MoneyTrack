@@ -70,7 +70,7 @@ function Login() {
 
       // Propósito: validar que exista token antes de guardar sesión.
       if (!result?.token) {
-        throw new Error('El backend no regresó un token de sesión.');
+        throw new Error('No se pudo iniciar sesión. Intenta nuevamente.');
       }
 
       // Propósito: evitar que falle si result.user no viene completo.
@@ -86,10 +86,10 @@ function Login() {
       navigate('/inicio', { replace: true });
     } catch (error) {
       // Propósito: mostrar el error real en consola para depurar.
-      console.error('Error al iniciar sesión:', error);
+      console.error('No se pudo iniciar sesión:', error);
 
       // Propósito: mostrar error visible en pantalla.
-      setError(error.message || 'No se pudo iniciar sesión.');
+      setError(error.message || 'No se pudo iniciar sesión. Revisa tus datos e intenta nuevamente.');
     } finally {
       // Propósito: desbloquear el botón.
       setIsLoading(false);
@@ -100,7 +100,7 @@ function Login() {
     <main className="login-wrapper">
       <section className="login-card">
         <div className="login-brand">
-          <img src="/snoopy-laptop-removebg-preview.png" alt="Pegaso Logo" className="login-logo" />
+          <img src="/snoopy-laptop-removebg-preview.png" alt="Logo" className="login-logo" />
 
           <div>
             <h1>Snoopy Project</h1>
@@ -147,7 +147,7 @@ function Login() {
 
           <button type="submit" className="btn-login" disabled={isLoading}>
             <span className="material-icons-outlined">login</span>
-            {isLoading ? 'Validando conexión...' : 'Ingresar'}
+            {isLoading ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>
       </section>

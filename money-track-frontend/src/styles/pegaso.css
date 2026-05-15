@@ -85,6 +85,13 @@ button {
   display: flex;
   align-items: center;
   gap: 10px;
+  color: inherit;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.brand:hover .brand-name {
+  text-decoration: none;
 }
 
 .brand-logo {
@@ -2329,11 +2336,6 @@ body.modo-egreso .report-section-tab.active .material-icons-outlined {
   margin-top: 22px;
 }
 
-/* Propósito: hacer más legible la diferencia dentro del historial. */
-.edit-history-difference {
-  font-weight: 800;
-  color: #92400e !important;
-}
 
 /* Propósito: permitir que la tabla de historial respire en pantallas grandes. */
 .edit-history-table th,
@@ -2341,9 +2343,11 @@ body.modo-egreso .report-section-tab.active .material-icons-outlined {
   white-space: nowrap;
 }
 
-/* Propósito: permitir que concepto y nombre no rompan la lectura del historial. */
+/* Propósito: permitir que nombre, concepto y comentario no rompan la lectura del historial. */
 .edit-history-table td:nth-child(4),
-.edit-history-table td:nth-child(5) {
+.edit-history-table td:nth-child(5),
+.edit-history-table td:nth-child(6),
+.edit-history-comment-cell {
   white-space: normal;
   min-width: 150px;
 }
@@ -2385,4 +2389,974 @@ body.modo-egreso .report-section-tab.active .material-icons-outlined {
 /* Propósito: dar más espacio al modal porque ahora muestra más campos. */
 .adjustment-modal-card {
   max-width: 780px;
+}
+
+
+/* Propósito: mantener el nombre/logo como botón sin subrayado visual. */
+.brand,
+.brand:hover,
+.brand:focus,
+.brand:visited,
+.brand-name,
+.brand:hover .brand-name,
+.brand:focus .brand-name {
+  text-decoration: none !important;
+}
+
+/* Propósito: mostrar el comentario del ajuste en una tarjeta de ancho completo. */
+.adjustment-detail-comment {
+  grid-column: 1 / -1;
+  background: #f0fdf4;
+  border-color: #bbf7d0;
+}
+
+/* Propósito: permitir que comentarios largos se lean sin romper el modal. */
+.adjustment-detail-comment strong {
+  white-space: pre-wrap;
+  word-break: break-word;
+  line-height: 1.45;
+}
+
+/* =========================================================
+   AJUSTES MONEYTRACK - COLORES POR MONEDA E IMPRESIÓN
+========================================================= */
+
+/* Propósito: mantener Ingreso/Egreso en gris dentro del encabezado de Inicio. */
+.home-excel-table .home-th-income,
+.home-excel-table .home-th-expense {
+  background: #f3f4f6 !important;
+  color: #4b5563 !important;
+  border-color: #d1d5db !important;
+}
+
+/* Propósito: colorear Dólares en azul rey y Pesos en verde en las tarjetas de Inicio. */
+.home-currency-summary div:first-child {
+  background: #eff6ff !important;
+  border-color: #1d4ed8 !important;
+}
+
+.home-currency-summary div:first-child small,
+.home-currency-summary div:first-child strong {
+  color: #1d4ed8 !important;
+}
+
+.home-currency-summary div:nth-child(2) {
+  background: #ecfdf5 !important;
+  border-color: #16a34a !important;
+}
+
+.home-currency-summary div:nth-child(2) small,
+.home-currency-summary div:nth-child(2) strong {
+  color: #16a34a !important;
+}
+
+/* Propósito: evitar colores rojo/verde por tipo en las tarjetas de ingreso y egreso. */
+.home-summary-card.income,
+.home-summary-card.expense {
+  border-color: #d1d5db !important;
+}
+
+.home-summary-card.income > span,
+.home-summary-card.expense > span {
+  color: #6b7280 !important;
+}
+
+/* Propósito: marcar columnas de Dólares en azul rey y Pesos en verde en Inicio. */
+.home-excel-table thead .home-currency-head th:nth-child(odd),
+.home-excel-table tbody td:nth-child(4),
+.home-excel-table tbody td:nth-child(6),
+.home-excel-table tbody td:nth-child(8),
+.home-excel-table tfoot td:nth-child(4),
+.home-excel-table tfoot td:nth-child(6),
+.home-excel-table tfoot td:nth-child(8) {
+  color: #1d4ed8 !important;
+}
+
+.home-excel-table thead .home-currency-head th:nth-child(even),
+.home-excel-table tbody td:nth-child(5),
+.home-excel-table tbody td:nth-child(7),
+.home-excel-table tbody td:nth-child(9),
+.home-excel-table tfoot td:nth-child(5),
+.home-excel-table tfoot td:nth-child(7),
+.home-excel-table tfoot td:nth-child(9) {
+  color: #16a34a !important;
+}
+
+/* Propósito: colocar Pesos, Dólares y Guardar en una sola fila en Movimientos. */
+.currency-action-group {
+  grid-column: 1 / -1;
+}
+
+.currency-save-row {
+  display: grid;
+  grid-template-columns: minmax(160px, 1fr) minmax(160px, 1fr) minmax(140px, auto);
+  align-items: stretch;
+  gap: 10px;
+}
+
+.currency-choice.compact {
+  min-height: 52px;
+  padding: 8px 10px;
+}
+
+.btn-save-inline {
+  min-height: 52px;
+  width: 100%;
+  padding-inline: 18px;
+  white-space: nowrap;
+}
+
+@media (max-width: 760px) {
+  .currency-save-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   AJUSTES SOLICITADOS - INICIO Y MOVIMIENTOS
+   Propósito: mejorar lectura de montos, colores por moneda y acciones del formulario.
+========================================================= */
+
+/* Propósito: mantener los encabezados principales de Ingreso/Egreso en gris. */
+.home-excel-table .home-th-income,
+.home-excel-table .home-th-expense {
+  background: #f3f4f6 !important;
+  color: #4b5563 !important;
+  border-color: #d1d5db !important;
+}
+
+/* Propósito: dar fondo gris claro a las columnas de Ingreso y Egreso sin perder el color por moneda. */
+.home-excel-table tbody td:nth-child(4),
+.home-excel-table tbody td:nth-child(5),
+.home-excel-table tbody td:nth-child(6),
+.home-excel-table tbody td:nth-child(7),
+.home-excel-table tfoot td:nth-child(4),
+.home-excel-table tfoot td:nth-child(5),
+.home-excel-table tfoot td:nth-child(6),
+.home-excel-table tfoot td:nth-child(7) {
+  background-color: #f9fafb !important;
+}
+
+/* Propósito: mantener Dólares en azul rey. */
+.home-excel-table thead .home-currency-head th:nth-child(odd),
+.home-excel-table tbody td:nth-child(4),
+.home-excel-table tbody td:nth-child(6),
+.home-excel-table tbody td:nth-child(8),
+.home-excel-table tfoot td:nth-child(4),
+.home-excel-table tfoot td:nth-child(6),
+.home-excel-table tfoot td:nth-child(8) {
+  color: #1d4ed8 !important;
+  font-weight: 800;
+}
+
+/* Propósito: mantener Pesos en verde. */
+.home-excel-table thead .home-currency-head th:nth-child(even),
+.home-excel-table tbody td:nth-child(5),
+.home-excel-table tbody td:nth-child(7),
+.home-excel-table tbody td:nth-child(9),
+.home-excel-table tfoot td:nth-child(5),
+.home-excel-table tfoot td:nth-child(7),
+.home-excel-table tfoot td:nth-child(9) {
+  color: #16a34a !important;
+  font-weight: 800;
+}
+
+/* Propósito: acomodar los botones de moneda en una fila y hacerlos más compactos. */
+.dashboard-currency-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.dashboard-currency-row .currency-choice.compact {
+  min-height: 44px;
+  padding: 7px 9px;
+  border-radius: 10px;
+}
+
+.dashboard-currency-row .currency-choice-symbol {
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  font-size: 0.76rem;
+}
+
+.dashboard-currency-row .currency-choice-text strong {
+  font-size: 0.82rem;
+}
+
+.dashboard-currency-row .currency-choice-text small {
+  font-size: 0.66rem;
+}
+
+.dashboard-currency-row .currency-choice-check {
+  font-size: 17px;
+}
+
+/* Propósito: dejar Limpiar y Guardar debajo de los botones de moneda. */
+.dashboard-form-actions {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.dashboard-form-actions .btn {
+  width: 100%;
+}
+
+/* Propósito: fila de total semanal dentro de las tablas de Movimientos. */
+.history-table tfoot td {
+  background: #f3f4f6 !important;
+  color: #111827;
+  font-weight: 900;
+  border-top: 2px solid #cbd5e1;
+  text-align: center !important;
+  font-variant-numeric: tabular-nums;
+}
+
+.history-total-row td:first-child {
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: #374151;
+}
+
+.history-total-row td:nth-child(2) {
+  color: #1d4ed8;
+}
+
+.history-total-row td:nth-child(3) {
+  color: #16a34a;
+}
+
+@media (max-width: 760px) {
+  .dashboard-currency-row,
+  .dashboard-form-actions {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   AJUSTES FINALES SOLICITADOS - COLORES, BOTONES Y ANCHOS
+========================================================= */
+
+/* Propósito: dar fondo azul rey a las columnas de Dólares en Inicio. */
+.home-excel-table thead .home-currency-head th:nth-child(odd),
+.home-excel-table tbody td:nth-child(4),
+.home-excel-table tbody td:nth-child(6),
+.home-excel-table tbody td:nth-child(8),
+.home-excel-table tfoot td:nth-child(4),
+.home-excel-table tfoot td:nth-child(6),
+.home-excel-table tfoot td:nth-child(8) {
+  background-color: #dbeafe !important;
+  color: #1d4ed8 !important;
+  border-color: #93c5fd !important;
+  font-weight: 800;
+}
+
+/* Propósito: dar fondo verde a las columnas de Pesos en Inicio. */
+.home-excel-table thead .home-currency-head th:nth-child(even),
+.home-excel-table tbody td:nth-child(5),
+.home-excel-table tbody td:nth-child(7),
+.home-excel-table tbody td:nth-child(9),
+.home-excel-table tfoot td:nth-child(5),
+.home-excel-table tfoot td:nth-child(7),
+.home-excel-table tfoot td:nth-child(9) {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+  border-color: #86efac !important;
+  font-weight: 800;
+}
+
+/* Propósito: mantener los encabezados principales Ingreso/Egreso en gris. */
+.home-excel-table .home-th-income,
+.home-excel-table .home-th-expense {
+  background: #f3f4f6 !important;
+  color: #4b5563 !important;
+  border-color: #d1d5db !important;
+}
+
+/* Propósito: colorear columnas Dólares/Pesos en tablas de movimientos y reportes. */
+.history-table tbody td:nth-child(6),
+.report-table tbody td:nth-child(6),
+.history-table tfoot td:nth-child(6),
+.report-table tfoot td:nth-child(6) {
+  background-color: #dbeafe !important;
+  color: #1d4ed8 !important;
+  border-color: #93c5fd !important;
+  font-weight: 800;
+}
+
+.history-table tbody td:nth-child(7),
+.report-table tbody td:nth-child(7),
+.history-table tfoot td:nth-child(7),
+.report-table tfoot td:nth-child(7) {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+  border-color: #86efac !important;
+  font-weight: 800;
+}
+
+/* Propósito: hacer más compactos los botones Dólares/Pesos en Movimientos. */
+.pagina-dashboard .dashboard-currency-row {
+  display: flex !important;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.pagina-dashboard .dashboard-currency-row .currency-choice.compact {
+  flex: 0 0 auto;
+  width: 132px;
+  min-height: 40px;
+  padding: 6px 8px;
+  border-radius: 10px;
+  gap: 7px;
+}
+
+.pagina-dashboard .dashboard-currency-row .currency-choice-symbol {
+  width: 24px;
+  height: 24px;
+  min-width: 24px;
+  font-size: 0.72rem;
+}
+
+.pagina-dashboard .dashboard-currency-row .currency-choice-text strong {
+  font-size: 0.78rem;
+}
+
+.pagina-dashboard .dashboard-currency-row .currency-choice-text small {
+  display: none;
+}
+
+.pagina-dashboard .dashboard-currency-row .currency-choice-check {
+  font-size: 16px;
+}
+
+/* Propósito: hacer menos anchos Limpiar y Guardar y mantenerlos debajo de moneda. */
+.pagina-dashboard .dashboard-form-actions {
+  grid-column: 1 / -1;
+  display: flex !important;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.pagina-dashboard .dashboard-form-actions .btn {
+  width: auto !important;
+  min-width: 108px;
+  padding: 9px 13px;
+  border-radius: 8px;
+  font-size: 0.86rem;
+}
+
+.pagina-dashboard .dashboard-form-actions .btn .material-icons-outlined {
+  font-size: 18px;
+}
+
+/* Propósito: aprovechar mejor el espacio de Concepto en tablas de Movimientos. */
+.pagina-dashboard .history-table {
+  min-width: 860px;
+  table-layout: fixed;
+}
+
+.pagina-dashboard .history-table thead th:nth-child(1),
+.pagina-dashboard .history-table tbody td:nth-child(1) {
+  width: 54px;
+}
+
+.pagina-dashboard .history-table thead th:nth-child(2),
+.pagina-dashboard .history-table tbody td:nth-child(2) {
+  width: 96px;
+}
+
+.pagina-dashboard .history-table thead th:nth-child(3),
+.pagina-dashboard .history-table tbody td:nth-child(3) {
+  width: 74px;
+}
+
+.pagina-dashboard .history-table thead th:nth-child(4),
+.pagina-dashboard .history-table tbody td:nth-child(4) {
+  width: 140px;
+}
+
+.pagina-dashboard .history-table thead th:nth-child(5),
+.pagina-dashboard .history-table tbody td:nth-child(5) {
+  width: auto;
+  text-align: left !important;
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.pagina-dashboard .history-table thead th:nth-child(6),
+.pagina-dashboard .history-table tbody td:nth-child(6),
+.pagina-dashboard .history-table tfoot td:nth-child(6),
+.pagina-dashboard .history-table thead th:nth-child(7),
+.pagina-dashboard .history-table tbody td:nth-child(7),
+.pagina-dashboard .history-table tfoot td:nth-child(7) {
+  width: 92px;
+  white-space: nowrap;
+}
+
+.pagina-dashboard .history-total-row td:first-child {
+  text-align: right !important;
+  padding-right: 16px;
+}
+
+@media (max-width: 720px) {
+  .pagina-dashboard .dashboard-currency-row,
+  .pagina-dashboard .dashboard-form-actions {
+    justify-content: stretch;
+  }
+
+  .pagina-dashboard .dashboard-currency-row .currency-choice.compact,
+  .pagina-dashboard .dashboard-form-actions .btn {
+    width: 100% !important;
+  }
+}
+
+
+/* =========================================================
+   AJUSTES FINALES: CONCEPTO CENTRADO, ACCIONES COMPACTAS
+========================================================= */
+/* Propósito: centrar nuevamente el texto de Concepto en Movimientos. */
+.pagina-dashboard .history-table tbody td.concept-cell,
+.pagina-dashboard .history-table tbody td:nth-child(5) {
+  text-align: center !important;
+  vertical-align: middle !important;
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Propósito: centrar el texto "Total de la semana" como estaba antes. */
+.pagina-dashboard .history-total-row .total-week-label,
+.pagina-dashboard .history-total-row td:first-child {
+  text-align: center !important;
+  padding-right: 8px !important;
+}
+
+/* Propósito: mantener las acciones de Reportes como botones pequeños a un costado. */
+.report-table {
+  table-layout: fixed;
+}
+
+.report-table .report-actions-header,
+.report-table .report-actions-cell {
+  width: 108px !important;
+  min-width: 108px !important;
+  max-width: 108px !important;
+  padding: 6px 4px !important;
+  background: transparent !important;
+  border-left-color: transparent !important;
+  border-right-color: transparent !important;
+  box-shadow: none !important;
+}
+
+.report-table .report-actions-header {
+  color: transparent !important;
+}
+
+.report-row-actions {
+  min-width: 0 !important;
+  width: auto !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: nowrap;
+}
+
+.btn-icon-action {
+  width: 30px !important;
+  height: 30px !important;
+  min-width: 30px !important;
+  padding: 0 !important;
+  border-radius: 8px !important;
+  gap: 0 !important;
+  font-size: 0 !important;
+}
+
+.btn-icon-action .material-icons-outlined {
+  font-size: 17px !important;
+  line-height: 1 !important;
+}
+
+.btn-adjustment-row {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+}
+
+.btn-adjustment-row:hover:not(:disabled) {
+  background: #ffedd5;
+}
+
+.btn-edit-row {
+  background: #eef4ff !important;
+  color: #174ea6 !important;
+  border: 1px solid #bfdbfe !important;
+}
+
+.btn-print-row {
+  background: #f8fafc;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+}
+
+.btn-print-row:hover:not(:disabled) {
+  background: #e2e8f0;
+}
+
+.btn-delete-row {
+  background: #fee2e2 !important;
+  color: #b91c1c !important;
+  border: 1px solid #fecaca !important;
+}
+
+.btn-delete-row:hover:not(:disabled) {
+  background: #fecaca !important;
+}
+
+@media (max-width: 820px) {
+  .report-table .report-actions-header,
+  .report-table .report-actions-cell {
+    width: 96px !important;
+    min-width: 96px !important;
+    max-width: 96px !important;
+  }
+
+  .btn-icon-action {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+  }
+}
+
+
+/* =========================================================
+   AJUSTES: MOVIMIENTOS CONCEPTO CENTRADO Y REPORTES ACCIONES
+========================================================= */
+/* Propósito: centrar también el título de la columna Concepto en Movimientos. */
+.pagina-dashboard .history-table thead th:nth-child(5) {
+  text-align: center !important;
+}
+
+/* Propósito: mantener los botones de Reportes dentro de la columna Acciones. */
+.report-table .report-actions-header,
+.report-table .report-actions-cell {
+  width: 118px !important;
+  min-width: 118px !important;
+  max-width: 118px !important;
+  padding: 7px 6px !important;
+  background: inherit !important;
+  border-left-color: #e5e7eb !important;
+  border-right-color: #e5e7eb !important;
+  box-shadow: none !important;
+  text-align: center !important;
+}
+
+.report-table .report-actions-header {
+  color: #334155 !important;
+  font-weight: 800 !important;
+}
+
+.report-row-actions {
+  width: 100% !important;
+  display: inline-flex !important;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  flex-wrap: nowrap;
+}
+
+/* Propósito: centrar la fila de total en Reportes. */
+.report-total-row .total-week-label {
+  text-align: center !important;
+  font-weight: 800 !important;
+}
+
+/* Propósito: conservar la fila cancelada en rojo aun cuando sus datos se muestran como --. */
+.report-table tbody tr.report-row-cancelado td {
+  background-color: #ffe1e1 !important;
+  color: #8a1f1f !important;
+  border-color: #f3b6b6 !important;
+}
+
+.report-table tbody tr.report-row-cancelado:hover td {
+  background-color: #ffd1d1 !important;
+}
+
+@media (max-width: 820px) {
+  .report-table .report-actions-header,
+  .report-table .report-actions-cell {
+    width: 108px !important;
+    min-width: 108px !important;
+    max-width: 108px !important;
+  }
+}
+
+/* =========================================================
+   AJUSTE: REPORTES CON ACCIONES AZULES Y COLUMNAS COMPACTAS
+   Propósito: dar prioridad visual a Concepto y Comentario sin sacar acciones de la tabla.
+========================================================= */
+
+/* Propósito: mantener la columna Acciones con el mismo estilo de encabezado que el resto. */
+body.modo-ingreso .report-table thead th.report-actions-header,
+body.modo-cancelado .report-table thead th.report-actions-header {
+  background: #86dfe6 !important;
+  color: #111111 !important;
+  border-left-color: rgba(17, 17, 17, 0.12) !important;
+  border-right-color: rgba(17, 17, 17, 0.12) !important;
+}
+
+/* Propósito: en egresos, acciones conserva el mismo tono del resto de encabezados de egresos. */
+body.modo-egreso .report-table thead th.report-actions-header {
+  background: #f0dc84 !important;
+  color: #111111 !important;
+  border-left-color: rgba(17, 17, 17, 0.12) !important;
+  border-right-color: rgba(17, 17, 17, 0.12) !important;
+}
+
+/* Propósito: en historial/cancelados, asegurar que todos los encabezados se vean con tono azul uniforme. */
+body.modo-cancelado .report-table thead th {
+  background: #86dfe6 !important;
+  color: #111111 !important;
+}
+
+/* Propósito: evitar que Acciones se pinte transparente por reglas anteriores. */
+.report-table .report-actions-header {
+  font-weight: 800 !important;
+  text-transform: uppercase;
+  white-space: nowrap !important;
+}
+
+/* Propósito: ajustar la tabla principal de reportes para dar más espacio a Concepto. */
+.report-table:not(.edit-history-table) {
+  table-layout: fixed !important;
+  min-width: 980px;
+}
+
+.report-table:not(.edit-history-table) thead th:nth-child(1),
+.report-table:not(.edit-history-table) tbody td:nth-child(1) {
+  width: 5.5% !important;
+  min-width: 48px !important;
+  max-width: 60px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.report-table:not(.edit-history-table) thead th:nth-child(2),
+.report-table:not(.edit-history-table) tbody td:nth-child(2) {
+  width: 9% !important;
+  min-width: 78px !important;
+  max-width: 98px !important;
+  padding-left: 7px !important;
+  padding-right: 7px !important;
+}
+
+.report-table:not(.edit-history-table) thead th:nth-child(3),
+.report-table:not(.edit-history-table) tbody td:nth-child(3) {
+  width: 8% !important;
+  min-width: 70px !important;
+  max-width: 86px !important;
+  padding-left: 7px !important;
+  padding-right: 7px !important;
+}
+
+.report-table:not(.edit-history-table) thead th:nth-child(4),
+.report-table:not(.edit-history-table) tbody td:nth-child(4) {
+  width: 14% !important;
+  min-width: 115px !important;
+  max-width: 150px !important;
+}
+
+.report-table:not(.edit-history-table) thead th:nth-child(5),
+.report-table:not(.edit-history-table) tbody td:nth-child(5) {
+  width: 34% !important;
+  min-width: 260px !important;
+  max-width: none !important;
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.report-table:not(.edit-history-table) thead th:nth-child(6),
+.report-table:not(.edit-history-table) tbody td:nth-child(6),
+.report-table:not(.edit-history-table) tfoot td:nth-child(6),
+.report-table:not(.edit-history-table) thead th:nth-child(7),
+.report-table:not(.edit-history-table) tbody td:nth-child(7),
+.report-table:not(.edit-history-table) tfoot td:nth-child(7) {
+  width: 8.5% !important;
+  min-width: 76px !important;
+  max-width: 92px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  white-space: nowrap !important;
+}
+
+.report-table:not(.edit-history-table) .report-actions-header,
+.report-table:not(.edit-history-table) .report-actions-cell {
+  width: 12.5% !important;
+  min-width: 102px !important;
+  max-width: 118px !important;
+  padding-left: 4px !important;
+  padding-right: 4px !important;
+}
+
+/* Propósito: ajustar la tabla de historial para priorizar Concepto y Comentario. */
+.edit-history-table {
+  table-layout: fixed !important;
+  min-width: 1180px;
+}
+
+.edit-history-table thead th:nth-child(1),
+.edit-history-table tbody td:nth-child(1) {
+  width: 5% !important;
+  min-width: 46px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+}
+
+.edit-history-table thead th:nth-child(2),
+.edit-history-table tbody td:nth-child(2) {
+  width: 8% !important;
+  min-width: 80px !important;
+  padding-left: 7px !important;
+  padding-right: 7px !important;
+}
+
+.edit-history-table thead th:nth-child(3),
+.edit-history-table tbody td:nth-child(3) {
+  width: 8% !important;
+  min-width: 76px !important;
+  padding-left: 7px !important;
+  padding-right: 7px !important;
+}
+
+.edit-history-table thead th:nth-child(4),
+.edit-history-table tbody td:nth-child(4) {
+  width: 12% !important;
+  min-width: 125px !important;
+}
+
+.edit-history-table thead th:nth-child(5),
+.edit-history-table tbody td:nth-child(5) {
+  width: 23% !important;
+  min-width: 250px !important;
+}
+
+.edit-history-table thead th:nth-child(6),
+.edit-history-table tbody td:nth-child(6),
+.edit-history-comment-cell {
+  width: 21% !important;
+  min-width: 230px !important;
+}
+
+.edit-history-table thead th:nth-child(7),
+.edit-history-table tbody td:nth-child(7),
+.edit-history-table thead th:nth-child(8),
+.edit-history-table tbody td:nth-child(8) {
+  width: 7% !important;
+  min-width: 78px !important;
+  padding-left: 6px !important;
+  padding-right: 6px !important;
+  white-space: nowrap !important;
+}
+
+.edit-history-table thead th:nth-child(9),
+.edit-history-table tbody td:nth-child(9) {
+  width: 9% !important;
+  min-width: 96px !important;
+  padding-left: 7px !important;
+  padding-right: 7px !important;
+  white-space: normal !important;
+}
+
+/* Propósito: permitir lectura cómoda en las columnas largas de historial. */
+.edit-history-table tbody td:nth-child(4),
+.edit-history-table tbody td:nth-child(5),
+.edit-history-table tbody td:nth-child(6) {
+  white-space: normal !important;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+/* Propósito: compactar botones para que Acciones no quite espacio a Concepto. */
+.report-row-actions {
+  gap: 4px !important;
+}
+
+.report-row-actions .btn-icon-action {
+  width: 28px !important;
+  height: 28px !important;
+  min-width: 28px !important;
+}
+
+/* =========================================================
+   FIX: HISTORIAL DE EDICIONES Y CANCELACIÓN TEMPORAL
+   Propósito: evitar que las columnas se recorran visualmente en historial.
+========================================================= */
+/* Propósito: en Historial de ediciones, Comentario debe conservar fondo claro normal. */
+.edit-history-table tbody td:nth-child(6),
+.edit-history-table tfoot td:nth-child(6),
+.edit-history-table .edit-history-comment-cell {
+  background-color: #ffffff !important;
+  color: #374151 !important;
+  border-color: #e5e7eb !important;
+  font-weight: 600 !important;
+}
+
+/* Propósito: en Historial de ediciones, Dólares debe conservar el fondo azul. */
+.edit-history-table tbody td:nth-child(7),
+.edit-history-table tfoot td:nth-child(7) {
+  background-color: #dbeafe !important;
+  color: #1d4ed8 !important;
+  border-color: #93c5fd !important;
+  font-weight: 800 !important;
+}
+
+/* Propósito: en Historial de ediciones, Pesos debe conservar el fondo verde. */
+.edit-history-table tbody td:nth-child(8),
+.edit-history-table tfoot td:nth-child(8) {
+  background-color: #dcfce7 !important;
+  color: #15803d !important;
+  border-color: #86efac !important;
+  font-weight: 800 !important;
+}
+
+/* Propósito: Fecha ajuste debe verse como dato normal, no como moneda. */
+.edit-history-table tbody td:nth-child(9),
+.edit-history-table tfoot td:nth-child(9) {
+  background-color: #ffffff !important;
+  color: #374151 !important;
+  border-color: #e5e7eb !important;
+  font-weight: 600 !important;
+}
+
+/* =========================================================
+   MODAL FORMAL PARA CONFIRMAR CANCELACIÓN
+========================================================= */
+.cancel-confirm-modal-card {
+  width: min(560px, 100%);
+  padding: 24px;
+}
+
+.cancel-confirm-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.cancel-confirm-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 18px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #fee2e2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+}
+
+.cancel-confirm-icon .material-icons-outlined {
+  font-size: 30px;
+}
+
+.cancel-confirm-content h2 {
+  margin: 0 0 8px;
+  color: #111827;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.cancel-confirm-content p {
+  margin: 0;
+  color: #4b5563;
+  line-height: 1.55;
+  font-size: 0.95rem;
+}
+
+.cancel-confirm-summary {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin-top: 18px;
+  padding: 14px;
+  border-radius: 18px;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+}
+
+.cancel-confirm-summary div {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.cancel-confirm-summary span {
+  color: #6b7280;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.cancel-confirm-summary strong {
+  color: #111827;
+  font-size: 0.95rem;
+  font-weight: 800;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cancel-confirm-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.btn-danger-formal {
+  background: #dc2626;
+  color: #ffffff;
+  border: 1px solid #b91c1c;
+}
+
+.btn-danger-formal:hover:not(:disabled) {
+  background: #b91c1c;
+  border-color: #991b1b;
+}
+
+.btn-danger-formal:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+.btn-danger-formal .material-icons-outlined {
+  font-size: 18px;
+}
+
+@media (max-width: 640px) {
+  .cancel-confirm-summary {
+    grid-template-columns: 1fr;
+  }
+
+  .cancel-confirm-actions {
+    flex-direction: column-reverse;
+  }
+
+  .cancel-confirm-actions .btn {
+    width: 100%;
+  }
 }
