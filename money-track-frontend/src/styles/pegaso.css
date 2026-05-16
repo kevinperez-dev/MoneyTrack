@@ -3360,3 +3360,188 @@ body.modo-cancelado .report-table thead th {
     width: 100%;
   }
 }
+
+/* =========================================================
+   TICKET TÉRMICO / RECIBO 80MM
+   Propósito: adaptar la vista previa y la impresión a un
+   formato compacto tipo ticket de tienda.
+========================================================= */
+
+/* Propósito: mostrar la vista previa con ancho similar al ticket real. */
+.preview-canvas {
+  display: flex;
+  justify-content: center;
+  overflow-x: auto;
+}
+
+/* Propósito: ajustar la etiqueta de pantalla a un formato de recibo de 80mm. */
+.label-sheet {
+  width: 80mm;
+  max-width: 100%;
+  min-height: auto;
+  border-radius: 8px;
+  padding: 14px 12px;
+}
+
+/* Propósito: compactar el encabezado del ticket para que quepa en papel térmico. */
+.label-top {
+  align-items: center;
+  gap: 8px;
+  border-bottom: 1px dashed #111111;
+  padding-bottom: 8px;
+  margin-bottom: 8px;
+}
+
+/* Propósito: evitar que el logo ocupe demasiado espacio en el ticket. */
+.label-brand img {
+  width: 34px;
+  height: 34px;
+}
+
+/* Propósito: compactar textos del encabezado de la etiqueta. */
+.label-brand h3 {
+  font-size: 0.9rem;
+}
+
+.label-brand p {
+  font-size: 0.72rem;
+}
+
+/* Propósito: hacer el folio más pequeño para formato ticket. */
+.label-code-box {
+  min-width: 84px;
+  border-radius: 8px;
+  padding: 8px 9px;
+}
+
+.label-code-box strong {
+  font-size: 0.78rem;
+}
+
+/* Propósito: mostrar los datos en una sola columna para mejor lectura. */
+.label-row {
+  grid-template-columns: 1fr;
+  gap: 6px;
+}
+
+/* Propósito: compactar cada campo del ticket. */
+.label-field {
+  min-height: auto;
+  border-radius: 8px;
+  padding: 7px 8px;
+}
+
+.field-title {
+  font-size: 0.65rem;
+  letter-spacing: 0.07em;
+}
+
+.label-field span:last-child {
+  font-size: 0.82rem;
+}
+
+/* Propósito: hacer más compacto el pie del ticket. */
+.label-footer {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px dashed #111111;
+}
+
+.barcode {
+  height: 34px;
+}
+
+.signature-area {
+  margin-top: 18px;
+  padding-top: 16px;
+}
+
+.signature-label {
+  font-size: 10px;
+}
+
+.signature-note,
+.print-note {
+  font-size: 9px;
+}
+
+@media print {
+  @page {
+    size: 80mm auto;
+    margin: 0;
+  }
+
+  /* Propósito: ocultar todo menos la etiqueta al imprimir desde Movimientos. */
+  body * {
+    visibility: hidden !important;
+  }
+
+  /* Propósito: imprimir únicamente el recibo. */
+  .label-sheet,
+  .label-sheet * {
+    visibility: visible !important;
+  }
+
+  /* Propósito: posicionar el recibo al inicio del papel térmico. */
+  .label-sheet {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    min-height: auto !important;
+    padding: 4mm 3mm !important;
+    margin: 0 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    font-family: Arial, Helvetica, sans-serif !important;
+  }
+
+  /* Propósito: quitar fondos decorativos y sombras en impresión. */
+  .label-sheet * {
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+
+  .label-top {
+    border-bottom: 1px dashed #000000 !important;
+  }
+
+  .label-code-box {
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: 1px solid #000000 !important;
+  }
+
+  .label-mini-title {
+    color: #000000 !important;
+  }
+
+  .label-field {
+    background: #ffffff !important;
+    border: none !important;
+    border-bottom: 1px dotted #9ca3af !important;
+    border-radius: 0 !important;
+    padding: 3px 0 !important;
+  }
+
+  .field-title {
+    color: #000000 !important;
+    font-weight: 800 !important;
+  }
+
+  .label-footer {
+    border-top: 1px dashed #000000 !important;
+  }
+
+  .barcode {
+    border-color: #000000 !important;
+  }
+
+  .signature-line {
+    background: #000000 !important;
+  }
+}

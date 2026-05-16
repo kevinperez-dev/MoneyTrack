@@ -567,8 +567,8 @@ function Dashboard() {
                   <div className="label-brand">
                     <img src="/snoopy-laptop-removebg-preview.png" alt="alt" />
                     <div>
-                      <h3>Snoopy Prokect</h3>
-                      <p>{config.previewText}</p>
+                      <h3>MoneyTrack</h3>
+                      <p>Comprobante de movimiento</p>
                     </div>
                   </div>
 
@@ -582,12 +582,12 @@ function Dashboard() {
                   <div className="label-row">
                     <div className="label-field">
                       <span className="field-title">Fecha</span>
-                      <span>{form.fecha || getTodayISO()}</span>
+                      <span>{formatShortDate(form.fecha || getTodayISO())}</span>
                     </div>
 
                     <div className="label-field">
                       <span className="field-title">Semana</span>
-                      <span>{getWeekLabel(previewInfo.year, previewInfo.week)}</span>
+                      <span>{previewInfo.week}</span>
                     </div>
                   </div>
 
@@ -600,20 +600,20 @@ function Dashboard() {
 
                   <div className="label-row">
                     <div className="label-field full">
-                      <span className="field-title">Descripción</span>
+                      <span className="field-title">Concepto</span>
                       <span>{form.descripcion.trim() || 'Descripción breve del movimiento.'}</span>
                     </div>
                   </div>
 
                   <div className="label-row">
                     <div className="label-field">
-                      <span className="field-title">Cantidad</span>
+                      <span className="field-title">Monto</span>
                       <span>{formatMoneyByCurrency(form.cantidad || 0, form.moneda)}</span>
                     </div>
 
                     <div className="label-field">
                       <span className="field-title">Moneda</span>
-                      <span>{form.moneda || 'Sin seleccionar'}</span>
+                      <span>{isDollarCurrency(form.moneda) ? 'Dólares' : form.moneda || 'Sin seleccionar'}</span>
                     </div>
                   </div>
                 </div>

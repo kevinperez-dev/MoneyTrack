@@ -90,6 +90,64 @@ function Home() {
         return Number(amount || 0) > 0 ? renderCurrencyAmount(amount) : '--';
     };
 
+    // Formatea cantidades editables con comas sin agregar símbolos de moneda.
+    const formatBalanceInputValue = (value) => {
+        if (value === null || value === undefined || value === '') return '';
+
+        const cleanValue = String(value).replace(/,/g, '');
+
+        if (Number.isNaN(Number(cleanValue))) return '';
+
+        const [integerPart, decimalPart] = cleanValue.split('.');
+        const formattedInteger = new Intl.NumberFormat('en-US', {
+            maximumFractionDigits: 0
+        }).format(Number(integerPart || 0));
+
+        return decimalPart !== undefined
+            ? `${formattedInteger}.${decimalPart.slice(0, 2)}`
+            : formattedInteger;
+    };
+
+    // Limpia el texto capturado para guardar solo números y punto decimal.
+    const cleanBalanceInputValue = (value) => {
+        const cleanValue = String(value || '')
+            .replace(/,/g, '')
+            .replace(/[^0-9.]/g, '');
+
+        const parts = cleanValue.split('.');
+
+        if (parts.length <= 1) return cleanValue;
+
+        return `${parts[0]}.${parts.slice(1).join('').slice(0, 2)}`;
+    };
+
+    // Convierte una fecha YYYY-MM-DD a formato corto, ejemplo 11/may.
+    const formatShortDate = (dateValue) => {
+        if (!dateValue) return '';
+
+        const [year, month, day] = String(dateValue).split('-');
+        const monthNames = {
+            '01': 'ene',
+            '02': 'feb',
+            '03': 'mar',
+            '04': 'abr',
+            '05': 'may',
+            '06': 'jun',
+            '07': 'jul',
+            '08': 'ago',
+            '09': 'sep',
+            '10': 'oct',
+            '11': 'nov',
+            '12': 'dic'
+        };
+
+        if (!year || !month || !day || !monthNames[month]) {
+            return dateValue;
+        }
+
+        return `${day}/${monthNames[month]}`;
+    };
+
     // Carga el saldo inicial manual correspondiente cuando cambia el periodo o la semana.
     const loadStartingBalances = (year, weekNumber) => {
         const storedBalances = getStoredBalances(year, weekNumber);
@@ -570,16 +628,17 @@ function Home() {
                                 <input
                                     id="startingBalanceDolares"
                                     className="filter-control"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={formatBalanceInputValue(
                                         computedInitialBalances.isAutomatic
                                             ? computedInitialBalances.dolares
                                             : manualStartingBalanceDolares
-                                    }
+                                    )}
                                     disabled={computedInitialBalances.isAutomatic}
-                                    onChange={(event) => setManualStartingBalanceDolares(event.target.value)}
+                                    onChange={(event) => {
+                                        setManualStartingBalanceDolares(cleanBalanceInputValue(event.target.value));
+                                    }}
                                 />
                             </div>
 
@@ -588,16 +647,17 @@ function Home() {
                                 <input
                                     id="startingBalancePesos"
                                     className="filter-control"
-                                    type="number"
-                                    min="0"
-                                    step="0.01"
-                                    value={
+                                    type="text"
+                                    inputMode="decimal"
+                                    value={formatBalanceInputValue(
                                         computedInitialBalances.isAutomatic
                                             ? computedInitialBalances.pesos
                                             : manualStartingBalancePesos
-                                    }
+                                    )}
                                     disabled={computedInitialBalances.isAutomatic}
-                                    onChange={(event) => setManualStartingBalancePesos(event.target.value)}
+                                    onChange={(event) => {
+                                        setManualStartingBalancePesos(cleanBalanceInputValue(event.target.value));
+                                    }}
                                 />
                             </div>
 
@@ -649,7 +709,7 @@ function Home() {
                                         <>
                                             {cashRows.map((row) => (
                                                 <tr key={row.id} className="home-row-initial">
-                                                    <td>{row.fecha}</td>
+                                                    <td>{formatShortDate(row.fecha)}</td>
                                                     <td>{row.folio}</td>
                                                     <td>{row.descripcion}</td>
                                                     <td>--</td>
@@ -679,7 +739,7 @@ function Home() {
                                                             : 'home-row-egreso'
                                                 }
                                             >
-                                                <td>{row.fecha}</td>
+                                                <td>{formatShortDate(row.fecha)}</td>
                                                 <td>{row.folio}</td>
                                                 <td>{row.descripcion}</td>
                                                 <td>{renderMovementAmount(row.ingresoDolares, 'dolares')}</td>

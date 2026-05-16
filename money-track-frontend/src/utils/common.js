@@ -331,15 +331,30 @@ export function formatAmount(value) {
 
 export function generateAutoFolio(dateISO, records) {
   if (!dateISO) return '';
+
+  // Propósito: formar el prefijo del folio con la fecha seleccionada.
+  // Ejemplo: 2026-05-10 => 260510.
   const [year, month, day] = dateISO.split('-');
   const prefix = `${year.slice(-2)}${month}${day}`;
-  const recordsOfDay = records.filter(
-    (record) => record.fecha === dateISO && String(record.folio).startsWith(prefix),
-  );
+
+  // Propósito: revisar todos los folios existentes del mismo día, sin importar
+  // si actualmente pertenecen a ingreso, egreso o historial/cancelado.
+  // Esto evita reutilizar folios cuando un movimiento cambió de tipo.
+  const recordsOfDay = records.filter((record) => {
+    const recordFolio = String(record.folio || '');
+
+    return recordFolio.startsWith(prefix);
+  });
+
+  // Propósito: obtener la secuencia más alta ya usada para esa fecha.
   const maxSequence = recordsOfDay.reduce((max, record) => {
-    const numeric = parseInt(String(record.folio).slice(prefix.length), 10);
+    const recordFolio = String(record.folio || '');
+    const numeric = parseInt(recordFolio.slice(prefix.length), 10);
+
     return !Number.isNaN(numeric) && numeric > max ? numeric : max;
   }, 0);
+
+  // Propósito: entregar el siguiente folio disponible sin repetir uno existente.
   return `${prefix}${String(maxSequence + 1).padStart(2, '0')}`;
 }
 

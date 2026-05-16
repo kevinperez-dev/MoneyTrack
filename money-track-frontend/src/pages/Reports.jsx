@@ -667,9 +667,9 @@ function Reports({ reportType = 'ingreso' }) {
     }
   };
 
-  // Propósito: imprimir únicamente el movimiento seleccionado desde Reportes.
+  // Propósito: imprimir únicamente el movimiento seleccionado desde Reportes en formato ticket térmico.
   const printMovement = (record) => {
-    const printWindow = window.open('', '_blank', 'width=520,height=720');
+    const printWindow = window.open('', '_blank', 'width=360,height=720');
 
     if (!printWindow) {
       setToast({
@@ -680,6 +680,14 @@ function Reports({ reportType = 'ingreso' }) {
       return;
     }
 
+    // Propósito: evitar que textos del usuario rompan el HTML del ticket.
+    const escapeHtml = (value) => String(value ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+
     const info = getISOWeekInfo(record.fecha);
     const dollarAmount = getAmountForCurrencyColumn(record, 'Dólares');
     const pesoAmount = getAmountForCurrencyColumn(record, 'Pesos');
@@ -689,77 +697,142 @@ function Reports({ reportType = 'ingreso' }) {
         ? 'Egreso'
         : 'Ingreso';
 
+    const montoPrincipal = isDollarCurrency(record.moneda) ? dollarAmount : pesoAmount;
+    const monedaTexto = isDollarCurrency(record.moneda) ? 'Dólares' : 'Pesos';
+
     printWindow.document.write(`
       <!doctype html>
       <html lang="es">
         <head>
           <meta charset="utf-8" />
-          <title>Movimiento ${record.folio}</title>
+          <title>Movimiento ${escapeHtml(record.folio)}</title>
           <style>
+            @page {
+              size: 80mm auto;
+              margin: 0;
+            }
+
+            * {
+              box-sizing: border-box;
+            }
+
             body {
-              font-family: Arial, sans-serif;
-              margin: 24px;
-              color: #111827;
+              width: 80mm;
+              margin: 0;
+              padding: 0;
+              background: #ffffff;
+              color: #000000;
+              font-family: Arial, Helvetica, sans-serif;
+              font-size: 11px;
             }
 
-            .print-card {
-              border: 1px solid #d1d5db;
-              border-radius: 14px;
-              padding: 20px;
+            .ticket-print {
+              width: 80mm;
+              padding: 4mm 3mm;
             }
 
-            h1 {
-              margin: 0 0 4px;
-              font-size: 20px;
+            .ticket-header {
+              text-align: center;
+              border-bottom: 1px dashed #000000;
+              padding-bottom: 6px;
+              margin-bottom: 6px;
             }
 
-            .subtitle {
-              margin: 0 0 18px;
-              color: #6b7280;
-              font-size: 13px;
+            .ticket-title {
+              margin: 0;
+              font-size: 15px;
+              font-weight: 800;
+              letter-spacing: 0.04em;
             }
 
-            table {
-              width: 100%;
-              border-collapse: collapse;
-              margin-top: 12px;
+            .ticket-subtitle {
+              margin: 2px 0 0;
+              font-size: 10px;
             }
 
-            th,
-            td {
-              border: 1px solid #e5e7eb;
-              padding: 10px;
-              text-align: left;
-              font-size: 13px;
+            .ticket-cancelado {
+              margin-top: 6px;
+              padding: 4px 6px;
+              border: 1px solid #000000;
+              font-size: 10px;
+              font-weight: 800;
+              text-transform: uppercase;
             }
 
-            th {
-              width: 34%;
-              background: #f3f4f6;
+            .ticket-row {
+              display: flex;
+              justify-content: space-between;
+              gap: 8px;
+              padding: 3px 0;
+              border-bottom: 1px dotted #bdbdbd;
             }
 
-            .money {
+            .ticket-row span:first-child {
+              flex: 0 0 auto;
               font-weight: 700;
+            }
+
+            .ticket-row span:last-child {
+              text-align: right;
+              word-break: break-word;
+            }
+
+            .ticket-row.ticket-concepto {
+              display: block;
+            }
+
+            .ticket-row.ticket-concepto span {
+              display: block;
+              text-align: left;
+            }
+
+            .ticket-row.ticket-concepto span:last-child {
+              margin-top: 3px;
+              font-weight: 600;
+            }
+
+            .ticket-total {
+              margin-top: 8px;
+              padding-top: 6px;
+              border-top: 1px dashed #000000;
+              font-size: 13px;
+              font-weight: 800;
+            }
+
+            .ticket-footer {
+              text-align: center;
+              margin-top: 10px;
+              padding-top: 6px;
+              border-top: 1px dashed #000000;
+              font-size: 10px;
             }
           </style>
         </head>
         <body>
-          <section class="print-card">
-            <h1>MoneyTrack</h1>
-            <p class="subtitle">Detalle de movimiento</p>
+          <section class="ticket-print">
+            <div class="ticket-header">
+              <h1 class="ticket-title">MoneyTrack</h1>
+              <p class="ticket-subtitle">Comprobante de movimiento</p>
+              ${record.tipo === 'cancelado' ? '<div class="ticket-cancelado">Movimiento cancelado</div>' : ''}
+            </div>
 
-            <table>
-              <tbody>
-                <tr><th>Tipo</th><td>${tipoTexto}</td></tr>
-                <tr><th>Sem</th><td>${info.week}</td></tr>
-                <tr><th>Folio</th><td>${record.folio || ''}</td></tr>
-                <tr><th>Fecha</th><td>${formatShortDate(record.fecha)}</td></tr>
-                <tr><th>Nombre</th><td>${record.nombre || ''}</td></tr>
-                <tr><th>Concepto</th><td>${record.descripcion || ''}</td></tr>
-                <tr><th>Dólares</th><td class="money">${dollarAmount}</td></tr>
-                <tr><th>Pesos</th><td class="money">${pesoAmount}</td></tr>
-              </tbody>
-            </table>
+            <div class="ticket-row"><span>Folio:</span><span>${escapeHtml(record.folio)}</span></div>
+            <div class="ticket-row"><span>Fecha:</span><span>${escapeHtml(formatShortDate(record.fecha))}</span></div>
+            <div class="ticket-row"><span>Semana:</span><span>${escapeHtml(info.week)}</span></div>
+            <div class="ticket-row"><span>Tipo:</span><span>${escapeHtml(tipoTexto)}</span></div>
+            <div class="ticket-row"><span>Nombre:</span><span>${escapeHtml(record.nombre)}</span></div>
+
+            <div class="ticket-row ticket-concepto">
+              <span>Concepto:</span>
+              <span>${escapeHtml(record.descripcion)}</span>
+            </div>
+
+            <div class="ticket-row"><span>Moneda:</span><span>${escapeHtml(monedaTexto)}</span></div>
+            <div class="ticket-row ticket-total"><span>Monto:</span><span>${escapeHtml(montoPrincipal)}</span></div>
+
+            <div class="ticket-footer">
+              <p>Gracias por usar MoneyTrack</p>
+            </div>
           </section>
         </body>
       </html>
@@ -1271,7 +1344,8 @@ function Reports({ reportType = 'ingreso' }) {
                   id="editFolio"
                   className="filter-control"
                   value={editForm.folio}
-                  onChange={(event) => updateEditForm('folio', event.target.value)}
+                  readOnly
+                  title="El folio se conserva como identificador original del movimiento."
                 />
               </div>
 
