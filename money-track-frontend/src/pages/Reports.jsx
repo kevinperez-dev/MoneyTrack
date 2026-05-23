@@ -15,6 +15,7 @@ import {
 import Toast from '../components/ui/Toast.jsx';
 import { getCurrentISOWeek, getISOWeekInfo, getMaxAllowedWeekForYear, getWeekLabel, formatShortDate } from '../utils/dates.js';
 import { exportRowsToExcelXml } from '../utils/excel.js';
+import { printMovementLabel } from '../utils/labelPrint.js';
 import {
   CURRENCY_OPTIONS,
   formatMoneyByCurrency,
@@ -592,180 +593,17 @@ function Reports({ reportType = 'ingreso' }) {
     }
   };
 
-  // Propósito: imprimir únicamente el movimiento seleccionado desde Reportes en formato ticket térmico.
+  // Propósito: imprimir desde Reportes usando el mismo formato de etiqueta que se usa al guardar en Movimientos.
   const printMovement = (record) => {
-    const printWindow = window.open('', '_blank', 'width=360,height=720');
-
-    if (!printWindow) {
-      setToast({
-        title: 'Aviso',
-        text: 'No se pudo abrir la impresión. Permite las ventanas emergentes e intenta de nuevo.',
-        type: 'error'
-      });
-      return;
-    }
-
-    // Propósito: evitar que textos del usuario rompan el HTML del ticket.
-    const escapeHtml = (value) => String(value ?? '')
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#039;');
-
-    const info = getISOWeekInfo(record.fecha);
-    const dollarAmount = getAmountForCurrencyColumn(record, 'Dólares');
-    const pesoAmount = getAmountForCurrencyColumn(record, 'Pesos');
-    const tipoTexto = record.tipo === 'cancelado'
-      ? 'Cancelado'
-      : record.tipo === 'egreso'
-        ? 'Egreso'
-        : 'Ingreso';
-
-    const montoPrincipal = isDollarCurrency(record.moneda) ? dollarAmount : pesoAmount;
-    const monedaTexto = isDollarCurrency(record.moneda) ? 'Dólares' : 'Pesos';
-
-    printWindow.document.write(`
-      <!doctype html>
-      <html lang="es">
-        <head>
-          <meta charset="utf-8" />
-          <title>Movimiento ${escapeHtml(record.folio)}</title>
-          <style>
-            @page {
-              size: 80mm auto;
-              margin: 0;
-            }
-
-            * {
-              box-sizing: border-box;
-            }
-
-            body {
-              width: 80mm;
-              margin: 0;
-              padding: 0;
-              background: #ffffff;
-              color: #000000;
-              font-family: Arial, Helvetica, sans-serif;
-              font-size: 11px;
-            }
-
-            .ticket-print {
-              width: 80mm;
-              padding: 4mm 3mm;
-            }
-
-            .ticket-header {
-              text-align: center;
-              border-bottom: 1px dashed #000000;
-              padding-bottom: 6px;
-              margin-bottom: 6px;
-            }
-
-            .ticket-title {
-              margin: 0;
-              font-size: 15px;
-              font-weight: 800;
-              letter-spacing: 0.04em;
-            }
-
-            .ticket-subtitle {
-              margin: 2px 0 0;
-              font-size: 10px;
-            }
-
-            .ticket-cancelado {
-              margin-top: 6px;
-              padding: 4px 6px;
-              border: 1px solid #000000;
-              font-size: 10px;
-              font-weight: 800;
-              text-transform: uppercase;
-            }
-
-            .ticket-row {
-              display: flex;
-              justify-content: space-between;
-              gap: 8px;
-              padding: 3px 0;
-              border-bottom: 1px dotted #bdbdbd;
-            }
-
-            .ticket-row span:first-child {
-              flex: 0 0 auto;
-              font-weight: 700;
-            }
-
-            .ticket-row span:last-child {
-              text-align: right;
-              word-break: break-word;
-            }
-
-            .ticket-row.ticket-concepto {
-              display: block;
-            }
-
-            .ticket-row.ticket-concepto span {
-              display: block;
-              text-align: left;
-            }
-
-            .ticket-row.ticket-concepto span:last-child {
-              margin-top: 3px;
-              font-weight: 600;
-            }
-
-            .ticket-total {
-              margin-top: 8px;
-              padding-top: 6px;
-              border-top: 1px dashed #000000;
-              font-size: 13px;
-              font-weight: 800;
-            }
-
-            .ticket-footer {
-              text-align: center;
-              margin-top: 10px;
-              padding-top: 6px;
-              border-top: 1px dashed #000000;
-              font-size: 10px;
-            }
-          </style>
-        </head>
-        <body>
-          <section class="ticket-print">
-            <div class="ticket-header">
-              <h1 class="ticket-title">MoneyTrack</h1>
-              <p class="ticket-subtitle">Comprobante de movimiento</p>
-              ${record.tipo === 'cancelado' ? '<div class="ticket-cancelado">Movimiento cancelado</div>' : ''}
-            </div>
-
-            <div class="ticket-row"><span>Folio:</span><span>${escapeHtml(record.folio)}</span></div>
-            <div class="ticket-row"><span>Fecha:</span><span>${escapeHtml(formatShortDate(record.fecha))}</span></div>
-            <div class="ticket-row"><span>Semana:</span><span>${escapeHtml(info.week)}</span></div>
-            <div class="ticket-row"><span>Tipo:</span><span>${escapeHtml(tipoTexto)}</span></div>
-            <div class="ticket-row"><span>Nombre:</span><span>${escapeHtml(record.nombre)}</span></div>
-
-            <div class="ticket-row ticket-concepto">
-              <span>Concepto:</span>
-              <span>${escapeHtml(record.descripcion)}</span>
-            </div>
-
-            <div class="ticket-row"><span>Moneda:</span><span>${escapeHtml(monedaTexto)}</span></div>
-            <div class="ticket-row ticket-total"><span>Monto:</span><span>${escapeHtml(montoPrincipal)}</span></div>
-
-            <div class="ticket-footer">
-              <p>Gracias por usar MoneyTrack</p>
-            </div>
-          </section>
-        </body>
-      </html>
-    `);
-
-    printWindow.document.close();
-    printWindow.focus();
-    printWindow.print();
+    printMovementLabel(record, {
+      onPopupBlocked: () => {
+        setToast({
+          title: 'Aviso',
+          text: 'No se pudo abrir la impresión. Permite las ventanas emergentes e intenta de nuevo.',
+          type: 'error'
+        });
+      },
+    });
   };
 
   // Propósito: aplicar los filtros actuales al listado.

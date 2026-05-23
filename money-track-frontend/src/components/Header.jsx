@@ -74,17 +74,24 @@ function Header({
 
     return (
         <header className="topbar">
-            <div className="topbar-left">
+            <div className="topbar-shell">
                 <Link to="/inicio" className="brand" aria-label="Ir a Inicio">
-                    <img src="/logo-sinFondo.png" alt="Logo" className="brand-logo" />
-                    <span className="brand-name">SnoopyProject</span>
+                    <span className="brand-logo-frame">
+                        <img src="/snoopy-laptop-removebg-preview.png" alt="Snoopy Project" className="brand-logo" />
+                    </span>
+
+                    <span className="brand-copy">
+                        <span className="brand-name">Snoopy Project</span>
+                        <span className="brand-subtitle">Control de ingresos y egresos</span>
+                    </span>
                 </Link>
 
-                <nav className="top-nav">
+                <nav className="top-nav" aria-label="Navegación principal">
                     <Link
                         to="/inicio"
                         className={`top-nav-link ${activePage === 'inicio' ? 'active' : ''}`}
                     >
+                        <span className="material-icons-outlined top-nav-icon">dashboard</span>
                         <span>Inicio</span>
                     </Link>
 
@@ -94,7 +101,10 @@ function Header({
                             className={`top-nav-link top-nav-dropdown-toggle ${activePage === 'movimientos' ? 'active' : ''}`}
                             onClick={toggleMovementsMenu}
                         >
-                            <span>Movimientos</span>
+                            <span className="top-nav-text">
+                                <span className="material-icons-outlined top-nav-icon">swap_vert</span>
+                                <span>Movimientos</span>
+                            </span>
                             <span className="material-icons-outlined top-nav-mini-caret">expand_more</span>
                         </button>
 
@@ -125,7 +135,10 @@ function Header({
                             className={`top-nav-link top-nav-dropdown-toggle ${activePage === 'reportes' ? 'active' : ''}`}
                             onClick={toggleReportsMenu}
                         >
-                            <span>Reportes</span>
+                            <span className="top-nav-text">
+                                <span className="material-icons-outlined top-nav-icon">assessment</span>
+                                <span>Reportes</span>
+                            </span>
                             <span className="material-icons-outlined top-nav-mini-caret">expand_more</span>
                         </button>
 
@@ -158,28 +171,19 @@ function Header({
                             </button>
                         </div>
                     </div>
-
-                    <a href="#" className="top-nav-link">
-                        <span>Documentos</span>
-                    </a>
                 </nav>
-            </div>
 
-            <div className="topbar-right">
-                <div className="topbar-search">
-                    <input type="text" placeholder="Buscar código" />
-                    <button type="button" aria-label="Buscar">
-                        <span className="material-icons-outlined">search</span>
+                <div className="topbar-actions">
+                    <div className="user-box" title="Usuario activo">
+                        <span className="material-icons-outlined user-box-icon">person</span>
+                        <span>{getCurrentUser()}</span>
+                    </div>
+
+                    <button type="button" className="logout-link" onClick={handleLogout}>
+                        <span className="material-icons-outlined">logout</span>
+                        <span>Cerrar sesión</span>
                     </button>
                 </div>
-
-                <div className="user-box">
-                    <span>{getCurrentUser()}</span>
-                </div>
-
-                <a href="#" className="logout-link" onClick={handleLogout}>
-                    Cerrar sesión
-                </a>
             </div>
         </header>
     );

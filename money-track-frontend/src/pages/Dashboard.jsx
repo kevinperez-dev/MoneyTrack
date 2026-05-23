@@ -6,6 +6,7 @@ import Toast from '../components/ui/Toast.jsx';
 import { getCurrentISOWeek, getISOWeekInfo, getMaxAllowedWeekForYear, getTodayISO, getWeekLabel, formatShortDate } from '../utils/dates.js';
 import { exportRowsToExcelXml } from '../utils/excel.js';
 import { generateAutoFolio } from '../utils/folio.js';
+import { printMovementLabel } from '../utils/labelPrint.js';
 import {
   CURRENCY_OPTIONS,
   formatMoneyByCurrency,
@@ -42,6 +43,47 @@ const modeConfig = {
     excelHeaderColor: '#F0DC84'
   }
 };
+
+
+// Propósito: limpiar la cantidad escrita por el usuario, permitiendo solo números y un punto decimal.
+function normalizeAmountInput(value) {
+  const rawValue = String(value ?? '').replace(/,/g, '').replace(/[^0-9.]/g, '');
+
+  if (!rawValue) return '';
+
+  const firstDotIndex = rawValue.indexOf('.');
+
+  if (firstDotIndex === -1) {
+    return rawValue.replace(/^0+(?=\d)/, '');
+  }
+
+  const integerPart = rawValue
+    .slice(0, firstDotIndex)
+    .replace(/^0+(?=\d)/, '');
+
+  const decimalPart = rawValue
+    .slice(firstDotIndex + 1)
+    .replace(/\./g, '')
+    .slice(0, 2);
+
+  return `${integerPart || '0'}.${decimalPart}`;
+}
+
+// Propósito: mostrar la cantidad con separadores de miles mientras se escribe, sin alterar el valor real guardado.
+function formatAmountInputValue(value) {
+  const amountText = String(value ?? '');
+
+  if (!amountText) return '';
+
+  const [integerPart, decimalPart] = amountText.split('.');
+  const formattedInteger = Number(integerPart || 0).toLocaleString('en-US');
+
+  if (amountText.includes('.')) {
+    return `${formattedInteger}.${decimalPart ?? ''}`;
+  }
+
+  return formattedInteger;
+}
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -289,12 +331,17 @@ function Dashboard() {
         type: 'success'
       });
 
-      // Propósito: abrir la ventana de impresión automáticamente después de guardar.
-      // Se limpia el formulario hasta que la impresión se haya enviado o cerrado.
-      window.setTimeout(() => {
-        window.print();
-        clearForm();
-      }, 250);
+      // Propósito: imprimir únicamente la etiqueta en una ventana limpia para evitar hojas extra.
+      printMovementLabel(savedRecord, {
+        onPopupBlocked: () => {
+          setToast({
+            title: 'Aviso',
+            text: 'No se pudo abrir la impresión. Permite las ventanas emergentes e intenta de nuevo.',
+            type: 'error'
+          });
+        },
+        onAfterPrint: clearForm,
+      });
     } catch (error) {
       setToast({
         title: 'Aviso',
@@ -424,13 +471,12 @@ function Dashboard() {
                 <div className="form-group">
                   <label htmlFor="cantidad">Cantidad</label>
                   <input
-                    type="number"
+                    type="text"
                     id="cantidad"
-                    min="0"
-                    step="0.01"
+                    inputMode="decimal"
                     placeholder="0.00"
-                    value={form.cantidad}
-                    onChange={(event) => updateForm('cantidad', event.target.value)}
+                    value={formatAmountInputValue(form.cantidad)}
+                    onChange={(event) => updateForm('cantidad', normalizeAmountInput(event.target.value))}
                   />
                 </div>
 
@@ -489,7 +535,7 @@ function Dashboard() {
                   <div className="label-brand">
                     <img src="/snoopy-laptop-removebg-preview.png" alt="alt" />
                     <div>
-                      <h3>MoneyTrack</h3>
+                      <h3>Snoopy Project</h3>
                       <p>Comprobante de movimiento</p>
                     </div>
                   </div>

@@ -62,84 +62,143 @@ button {
    Se estiliza para acercarse a la captura enviada.
 ========================================================= */
 .topbar {
-  background: var(--color-black);
+  background:
+    linear-gradient(135deg, rgba(16, 16, 16, 0.98), rgba(31, 31, 31, 0.98));
   color: #ffffff;
-  min-height: 54px;
+  min-height: 68px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 0 14px;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.14);
+  justify-content: center;
+  padding: 0 18px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.14);
   position: sticky;
   top: 0;
   z-index: 30;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-.topbar-left {
-  display: flex;
+.topbar-shell {
+  width: 100%;
+  max-width: 1420px;
+  display: grid;
+  grid-template-columns: minmax(240px, auto) 1fr auto;
   align-items: center;
   gap: 18px;
 }
 
 .brand {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   color: inherit;
   text-decoration: none;
   cursor: pointer;
+  min-width: 0;
 }
 
 .brand:hover .brand-name {
   text-decoration: none;
 }
 
+.brand-logo-frame {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.08);
+  flex: 0 0 auto;
+}
+
 .brand-logo {
-  width: 28px;
-  height: 28px;
+  width: 32px;
+  height: 32px;
   object-fit: contain;
 }
 
+.brand-copy {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
 .brand-name {
-  font-size: 1.08rem;
+  font-size: 1.03rem;
+  line-height: 1.1;
   font-weight: 700;
   color: #ffffff;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.brand-subtitle {
+  font-size: 0.72rem;
+  line-height: 1.2;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.68);
+  white-space: nowrap;
 }
 
 .top-nav {
-  display: flex;
+  justify-self: center;
+  display: inline-flex;
   align-items: center;
-  gap: 4px;
+  gap: 6px;
+  padding: 5px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 .top-nav-link {
-  color: #ffffff;
+  color: rgba(255, 255, 255, 0.88);
   text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 400;
-  padding: 10px 12px;
-  border-radius: 4px;
-  transition: background 0.2s ease;
+  font-size: 0.88rem;
+  font-weight: 500;
+  padding: 9px 13px;
+  border-radius: 999px;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease,
+    transform 0.2s ease;
   background: transparent;
   border: none;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 5px;
+  justify-content: center;
+  gap: 7px;
   min-height: 38px;
 }
 
 .top-nav-link:hover {
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.10);
+  color: #ffffff;
 }
 
 .top-nav-link.active {
-  background: var(--color-header-active);
+  background: #ffffff;
+  color: #151515;
+  box-shadow: 0 6px 14px rgba(0, 0, 0, 0.16);
+}
+
+.top-nav-icon {
+  font-size: 18px;
+}
+
+.top-nav-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
 }
 
 .top-nav-mini-caret {
   font-size: 18px;
   opacity: 0.9;
+  transition: transform 0.2s ease;
 }
 
 .has-caret {
@@ -156,7 +215,7 @@ button {
 }
 
 .top-nav-dropdown-toggle {
-  min-width: 138px;
+  min-width: 148px;
   justify-content: space-between;
 }
 
@@ -166,13 +225,14 @@ button {
 
 .top-nav-dropdown-menu {
   position: absolute;
-  top: calc(100% + 8px);
-  left: 0;
+  top: calc(100% + 12px);
+  left: 50%;
+  transform: translateX(-50%);
   min-width: 220px;
   background: #ffffff;
   border: 1px solid #dfdfdf;
-  border-radius: 8px;
-  box-shadow: 0 14px 26px rgba(0, 0, 0, 0.18);
+  border-radius: 14px;
+  box-shadow: 0 18px 34px rgba(0, 0, 0, 0.20);
   padding: 8px;
   display: none;
   flex-direction: column;
@@ -189,20 +249,23 @@ button {
   border: none;
   background: transparent;
   color: #222222;
-  border-radius: 8px;
+  border-radius: 10px;
   padding: 10px 12px;
   display: inline-flex;
   align-items: center;
   gap: 10px;
   text-align: left;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition:
+    background 0.2s ease,
+    color 0.2s ease;
 }
 
 .top-nav-dropdown-item:hover {
   background: #f5f5f5;
 }
 
+.top-nav-dropdown-item.active,
 body.modo-ingreso #menuIngresos,
 body.modo-egreso #menuEgresos {
   font-weight: 700;
@@ -218,58 +281,56 @@ body.modo-egreso #menuEgresos {
   color: var(--color-egreso-text);
 }
 
-.topbar-right {
-  display: flex;
+.topbar-actions {
+  justify-self: end;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-}
-
-.topbar-search {
-  display: flex;
-  align-items: center;
-  background: #ffffff;
-  border-radius: 4px;
-  overflow: hidden;
-  border: 1px solid #2c2c2c;
-  height: 34px;
-}
-
-.topbar-search input {
-  border: none;
-  outline: none;
-  padding: 0 10px;
-  width: 160px;
-  font-size: 0.86rem;
-  color: #222222;
-  background: #ffffff;
-}
-
-.topbar-search button {
-  width: 38px;
-  height: 34px;
-  border: none;
-  background: #ffffff;
-  color: #111111;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  gap: 10px;
 }
 
 .user-box {
-  display: flex;
+  min-height: 38px;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   color: #ffffff;
-  font-size: 0.88rem;
+  font-size: 0.86rem;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.user-box-icon {
+  font-size: 18px;
+  opacity: 0.88;
 }
 
 .logout-link {
+  min-height: 38px;
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  background: rgba(255, 255, 255, 0.08);
   color: #ffffff;
+  border-radius: 999px;
+  padding: 8px 13px;
   text-decoration: none;
-  font-size: 0.88rem;
-  padding-left: 10px;
-  border-left: 1px solid rgba(255, 255, 255, 0.18);
+  font-size: 0.86rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  transition:
+    background 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.logout-link:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.22);
+}
+
+.logout-link .material-icons-outlined {
+  font-size: 18px;
 }
 
 /* =========================================================
@@ -1179,15 +1240,23 @@ body.modo-egreso .report-table thead th {
 
 @media (max-width: 900px) {
   .topbar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
     padding: 10px 12px;
   }
 
-  .topbar-left,
-  .topbar-right {
+  .topbar-shell {
+    grid-template-columns: 1fr;
+    gap: 10px;
+  }
+
+  .brand,
+  .top-nav,
+  .topbar-actions {
+    justify-self: center;
+  }
+
+  .topbar-actions {
     flex-wrap: wrap;
+    justify-content: center;
   }
 
   .history-filter-grid,
@@ -1213,10 +1282,12 @@ body.modo-egreso .report-table thead th {
 
   .top-nav {
     flex-wrap: wrap;
+    border-radius: 18px;
   }
 
   .top-nav-dropdown-menu {
     position: static;
+    transform: none;
     margin-top: 8px;
     width: 100%;
   }
@@ -1536,6 +1607,109 @@ body.modo-egreso .report-table thead th {
 
 .home-excel-card {
   overflow: hidden;
+  border: 1px solid #e4e7ec;
+  box-shadow: 0 12px 30px rgba(16, 24, 40, 0.07);
+}
+
+.home-control-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 24px;
+  padding: 22px 24px;
+  border-bottom: 1px solid #edf0f3;
+  background: linear-gradient(135deg, #ffffff 0%, #fbfcfe 100%);
+}
+
+.home-control-title-block {
+  max-width: 760px;
+}
+
+.home-section-kicker {
+  display: inline-flex;
+  margin-bottom: 8px;
+  color: #667085;
+  font-size: 0.74rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.home-control-title-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+
+.home-control-title-row h2 {
+  margin: 0;
+  color: #101828;
+  font-size: 1.32rem;
+  line-height: 1.2;
+}
+
+.home-control-title-block p {
+  margin: 0;
+  color: #475467;
+  font-size: 0.94rem;
+  line-height: 1.45;
+}
+
+.home-status-chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 5px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+}
+
+.home-status-chip.automatic {
+  color: #026aa2;
+  background: #eff8ff;
+  border: 1px solid #b9e6fe;
+}
+
+.home-status-chip.manual {
+  color: #7a6200;
+  background: #fffaeb;
+  border: 1px solid #fedf89;
+}
+
+.home-control-meta-card {
+  min-width: 230px;
+  padding: 14px 16px;
+  border: 1px solid #ead7a8;
+  border-radius: 14px;
+  background: #fffaf0;
+  text-align: right;
+}
+
+.home-control-meta-card span {
+  display: block;
+  margin-bottom: 6px;
+  color: #7a6200;
+  font-size: 0.73rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.home-control-meta-card strong {
+  display: block;
+  color: #101828;
+  font-size: 0.95rem;
+  line-height: 1.25;
+}
+
+.home-control-meta-card small {
+  display: block;
+  margin-top: 4px;
+  color: #667085;
+  font-size: 0.8rem;
 }
 
 .home-card-subtitle {
@@ -1544,11 +1718,125 @@ body.modo-egreso .report-table thead th {
   font-size: 0.9rem;
 }
 
+.home-auto-balance-note {
+  margin-top: 6px;
+  color: #475467;
+  font-size: 0.86rem;
+}
+
+.home-filters-panel {
+  margin: 18px 20px 0;
+  padding: 16px;
+  border: 1px solid #e4e7ec;
+  border-radius: 16px;
+  background: #f8fafc;
+}
+
+.home-filters-panel-heading {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.home-filters-panel-heading h3 {
+  margin: 0 0 4px;
+  color: #101828;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.home-filters-panel-heading p {
+  margin: 0;
+  color: #667085;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
 .home-filters-row {
   display: grid;
-  grid-template-columns: 180px 280px 220px 220px;
-  gap: 14px;
-  margin-bottom: 16px;
+  grid-template-columns: minmax(150px, 0.75fr) minmax(240px, 1.2fr) minmax(190px, 1fr) minmax(190px, 1fr);
+  gap: 12px;
+  margin-bottom: 0;
+}
+
+.home-filter-card {
+  position: relative;
+  min-width: 0;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #e4e7ec;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+.home-filter-card label {
+  padding-left: 0;
+  color: #344054;
+  font-size: 0.76rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.home-filter-card .filter-control {
+  height: 42px;
+  border-radius: 10px;
+  border-color: #d0d5dd;
+  color: #101828;
+  font-size: 0.92rem;
+  background: #ffffff;
+}
+
+.home-filter-card .filter-control:disabled {
+  color: #475467;
+  background: #f2f4f7;
+  border-color: #e4e7ec;
+  cursor: not-allowed;
+}
+
+.home-money-card small {
+  position: absolute;
+  right: 24px;
+  bottom: 23px;
+  color: #98a2b3;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  pointer-events: none;
+}
+
+.home-money-card .filter-control {
+  padding-right: 56px;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-balance-auto-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 7px 11px;
+  border: 1px solid #b9e6fe;
+  border-radius: 999px;
+  color: #026aa2;
+  background: #eff8ff;
+  font-size: 0.78rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.home-balance-auto-chip span {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  background: #d1e9ff;
+  font-size: 0.86rem;
+  line-height: 1;
 }
 
 .home-table-wrapper {
@@ -1700,6 +1988,14 @@ body.modo-egreso .report-table thead th {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
 
+  .home-control-header {
+    flex-direction: column;
+  }
+
+  .home-control-meta-card {
+    text-align: left;
+  }
+
   .home-filters-row {
     grid-template-columns: repeat(2, minmax(220px, 1fr));
   }
@@ -1709,6 +2005,19 @@ body.modo-egreso .report-table thead th {
   .home-summary-grid,
   .home-filters-row {
     grid-template-columns: 1fr;
+  }
+
+  .home-control-header {
+    padding: 18px;
+  }
+
+  .home-filters-panel {
+    margin: 14px 14px 0;
+    padding: 14px;
+  }
+
+  .home-filters-panel-heading {
+    flex-direction: column;
   }
 }
 /* =========================================================
@@ -3543,5 +3852,590 @@ body.modo-cancelado .report-table thead th {
 
   .signature-line {
     background: #000000 !important;
+  }
+}
+
+/* =========================================================
+   AJUSTE DE ETIQUETA: TEXTO CENTRADO Y UNA SOLA IMPRESIÓN
+========================================================= */
+/* Propósito: centrar todo el contenido visible de la etiqueta en Movimientos. */
+.label-sheet,
+.label-sheet * {
+  text-align: center;
+}
+
+/* Propósito: centrar el encabezado de la etiqueta para igualarlo con la impresión de Reportes. */
+.label-top {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Propósito: centrar logo, título y subtítulo de la marca. */
+.label-brand {
+  width: 100%;
+  justify-content: center;
+  text-align: center;
+}
+
+/* Propósito: centrar el recuadro del folio. */
+.label-code-box {
+  align-items: center;
+  text-align: center;
+}
+
+/* Propósito: centrar los campos de datos dentro de la etiqueta. */
+.label-field {
+  align-items: center;
+  text-align: center;
+}
+
+/* Propósito: centrar los textos largos sin romper el ancho del ticket. */
+.label-field span:last-child {
+  text-align: center;
+}
+
+/* Propósito: centrar el pie, código visual, firma y nota final. */
+.label-footer,
+.barcode-box,
+.signature-area,
+.print-note {
+  align-items: center;
+  text-align: center;
+}
+
+@media print {
+  /* Propósito: evitar hojas extra cuando se imprima directamente desde la pantalla de Movimientos. */
+  html,
+  body {
+    width: 80mm !important;
+    min-width: 80mm !important;
+    max-width: 80mm !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #ffffff !important;
+  }
+
+  /* Propósito: conservar visible solo la etiqueta y eliminar espacio extra del layout. */
+  #root {
+    width: 80mm !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+  }
+
+  /* Propósito: posicionar la etiqueta como único contenido imprimible. */
+  .label-sheet {
+    position: fixed !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 auto !important;
+    padding: 4mm 3mm !important;
+    overflow: hidden !important;
+    text-align: center !important;
+  }
+
+  /* Propósito: mantener todo el texto centrado también al imprimir. */
+  .label-sheet,
+  .label-sheet *,
+  .label-top,
+  .label-brand,
+  .label-code-box,
+  .label-field,
+  .label-field span:last-child,
+  .label-footer,
+  .barcode-box,
+  .signature-area,
+  .print-note {
+    text-align: center !important;
+  }
+
+  .label-top {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
+  .label-brand {
+    width: 100% !important;
+    justify-content: center !important;
+  }
+
+  .label-code-box,
+  .label-field,
+  .label-footer,
+  .barcode-box {
+    align-items: center !important;
+  }
+}
+
+/* =========================================================
+   AJUSTE FINAL DE CENTRADO PARA ETIQUETA
+   Propósito: evitar que el logotipo y el texto se vean desalineados.
+========================================================= */
+.label-sheet {
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.label-top,
+.label-brand,
+.label-code-box,
+.label-body,
+.label-field,
+.label-footer,
+.barcode-box,
+.signature-area,
+.print-note {
+  text-align: center;
+}
+
+.label-brand {
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.label-brand img {
+  display: block;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.label-brand div {
+  width: 100%;
+}
+
+.label-code-box,
+.label-field,
+.label-footer,
+.barcode-box {
+  align-items: center;
+}
+
+@media print {
+  /* Propósito: centrar la etiqueta dentro de la hoja elegida en el diálogo de impresión. */
+  html,
+  body,
+  #root {
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: none !important;
+  }
+
+  .label-sheet {
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 4mm auto 0 !important;
+  }
+
+  .label-brand {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+}
+
+/* =========================================================
+   CONTROL SEMANAL - CONFIGURACIÓN INTEGRADA
+========================================================= */
+/* Propósito: integrar la configuración del periodo dentro del encabezado del control semanal. */
+.home-control-header {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: 24px;
+  border-bottom: 1px solid #edf0f3;
+  background: linear-gradient(135deg, #ffffff 0%, #fbfcfe 100%);
+}
+
+.home-control-topline {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.home-control-title-block {
+  max-width: none;
+}
+
+.home-control-title-row {
+  margin-bottom: 0;
+}
+
+.home-period-config {
+  padding: 16px;
+  border: 1px solid #e4e7ec;
+  border-radius: 18px;
+  background: #f8fafc;
+}
+
+.home-period-config-heading {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+
+.home-period-config-heading h3 {
+  margin: 0;
+  color: #101828;
+  font-size: 0.98rem;
+  line-height: 1.25;
+}
+
+.home-period-config-heading p {
+  margin: 3px 0 0;
+  color: #667085;
+  font-size: 0.85rem;
+  line-height: 1.35;
+}
+
+.home-period-config .home-filters-row {
+  grid-template-columns: minmax(150px, 0.75fr) minmax(240px, 1.2fr) minmax(190px, 1fr) minmax(190px, 1fr);
+  gap: 12px;
+}
+
+.home-period-config .home-filter-card {
+  padding: 12px;
+  border-color: #dfe5ee;
+  background: #ffffff;
+}
+
+.home-period-config .home-filter-card label {
+  color: #344054;
+  font-size: 0.74rem;
+}
+
+.home-period-config .home-filter-card .filter-control {
+  height: 40px;
+}
+
+.home-control-topline .home-balance-auto-chip {
+  margin-top: 2px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 1180px) {
+  .home-control-topline,
+  .home-period-config-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .home-period-config .home-filters-row {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .home-control-header {
+    padding: 18px;
+  }
+
+  .home-period-config {
+    padding: 14px;
+  }
+
+  .home-period-config .home-filters-row {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   CONTROL SEMANAL - CAMPOS ALINEADOS
+========================================================= */
+/* Propósito: dejar el control semanal con una fila limpia de campos, sin encabezados repetidos o elementos que desalineen la vista. */
+.home-control-header-fields-only {
+  display: block;
+  padding: 18px 24px 20px;
+  border-bottom: 1px solid #edf0f3;
+  background: #ffffff;
+}
+
+/* Propósito: distribuir periodo, semana y saldos en una sola línea alineada con el ancho de la tabla. */
+.home-control-fields-grid {
+  display: grid;
+  grid-template-columns: minmax(170px, 0.85fr) minmax(270px, 1.45fr) minmax(230px, 1.1fr) minmax(230px, 1.1fr);
+  align-items: stretch;
+  gap: 12px;
+  width: 100%;
+  margin: 0;
+}
+
+/* Propósito: mantener todos los campos con la misma altura y lectura visual. */
+.home-control-fields-grid .home-filter-card {
+  min-height: 88px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid #dfe5ee;
+  border-radius: 14px;
+  background: #ffffff;
+}
+
+/* Propósito: hacer que las etiquetas superiores sean consistentes y legibles. */
+.home-control-fields-grid .home-filter-card label {
+  margin: 0;
+  color: #101828;
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 1.1;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+/* Propósito: alinear visualmente inputs y selects dentro de cada tarjeta. */
+.home-control-fields-grid .home-filter-card .filter-control {
+  width: 100%;
+  height: 40px;
+  margin-top: 8px;
+  border-radius: 10px;
+  border-color: #d0d5dd;
+  color: #101828;
+  background: #ffffff;
+  font-size: 0.92rem;
+}
+
+/* Propósito: dejar la unidad monetaria alineada sin mover el input. */
+.home-control-fields-grid .home-money-card small {
+  right: 24px;
+  bottom: 24px;
+}
+
+/* Propósito: evitar saltos o desalineación en pantallas medianas. */
+@media (max-width: 1180px) {
+  .home-control-fields-grid {
+    grid-template-columns: repeat(2, minmax(220px, 1fr));
+  }
+}
+
+/* Propósito: adaptar los campos en celulares sin perder orden. */
+@media (max-width: 640px) {
+  .home-control-header-fields-only {
+    padding: 16px;
+  }
+
+  .home-control-fields-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* =========================================================
+   CONTROL SEMANAL - ENCABEZADO SIMPLE CON CAMPOS ALINEADOS
+========================================================= */
+/* Propósito: recuperar el título del control semanal sin volver a saturar el panel. */
+.home-control-header-fields-only {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 24px 22px;
+  border-bottom: 1px solid #edf0f3;
+  background: #ffffff;
+}
+
+/* Propósito: alinear el título, subtítulo y estado en una zona clara antes de los campos. */
+.home-control-intro {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+/* Propósito: evitar que el encabezado se extienda demasiado y pierda lectura. */
+.home-control-intro-text {
+  min-width: 0;
+}
+
+/* Propósito: mostrar “Resumen semanal” como una referencia discreta. */
+.home-control-intro .home-section-kicker {
+  margin-bottom: 7px;
+  color: #475467;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+}
+
+/* Propósito: mantener el título y la etiqueta de saldo alineados en la misma línea. */
+.home-control-intro .home-control-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+}
+
+/* Propósito: darle presencia al título sin hacerlo pesado. */
+.home-control-intro .home-control-title-row h2 {
+  margin: 0;
+  color: #101828;
+  font-size: 1.22rem;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+/* Propósito: dejar el detalle de la semana como subtítulo limpio. */
+.home-control-intro p {
+  margin: 6px 0 0;
+  color: #667085;
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+/* Propósito: hacer que la etiqueta de saldo se vea ligera y no compita con el título. */
+.home-control-intro .home-status-chip {
+  min-height: 26px;
+  padding: 4px 10px;
+  font-size: 0.72rem;
+  font-weight: 800;
+}
+
+/* Propósito: mantener los campos perfectamente alineados debajo del encabezado. */
+.home-control-header-fields-only .home-control-fields-grid {
+  margin-top: 0;
+}
+
+@media (max-width: 640px) {
+  .home-control-header-fields-only {
+    padding: 16px;
+    gap: 14px;
+  }
+
+  .home-control-intro .home-control-title-row {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+  }
+}
+
+/* =========================================================
+   CONTROL SEMANAL - SOLO ETIQUETA SUPERIOR
+========================================================= */
+/* Propósito: dejar el bloque de control semanal con un encabezado mínimo y campos alineados. */
+.home-control-intro-only {
+  align-items: center;
+  justify-content: flex-start;
+  min-height: auto;
+}
+
+/* Propósito: quitar espacio extra cuando el encabezado solo muestra “Resumen semanal”. */
+.home-control-intro-only .home-section-kicker {
+  display: inline-block;
+  margin-bottom: 0;
+}
+
+
+/* =========================================================
+   CONTROL SEMANAL - TÍTULO Y EXPORTACIÓN
+========================================================= */
+/* Propósito: dejar solo el título Control semanal, bien alineado con el botón de exportación. */
+.home-control-intro-weekly {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+/* Propósito: conservar la misma presencia visual del título anterior sin agregar subtítulos extra. */
+.home-control-intro-weekly .home-control-title-row {
+  margin: 0;
+}
+
+/* Propósito: mantener el título con la fuente, color y peso visual original del bloque Control semanal. */
+.home-control-intro-weekly .home-control-title-row h2 {
+  margin: 0;
+  color: #101828;
+  font-size: 1.22rem;
+  line-height: 1.2;
+  font-weight: 800;
+}
+
+/* Propósito: alinear el botón Exportar con el título sin afectar los campos del periodo. */
+.home-weekly-export-btn {
+  min-height: 38px;
+  padding: 9px 14px;
+  white-space: nowrap;
+}
+
+.home-weekly-export-btn .material-icons-outlined {
+  font-size: 18px;
+}
+
+@media (max-width: 640px) {
+  .home-control-intro-weekly {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .home-weekly-export-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* =========================================================
+   CONTROL SEMANAL - EXPORTACIÓN COMO ÍCONO
+========================================================= */
+/* Propósito: mover la acción de exportar junto a la tabla y evitar el botón grande en el encabezado. */
+.home-table-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 16px 20px 0;
+}
+
+/* Propósito: mostrar una referencia discreta de la tabla sin competir con el contenido. */
+.home-table-actions-title {
+  color: #475467;
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+/* Propósito: reutilizar el estilo de acciones por ícono que ya usa Reportes. */
+.home-weekly-export-icon {
+  flex: 0 0 auto;
+  color: #175cd3;
+  background: #eff8ff;
+  border-color: #b9e6fe;
+}
+
+.home-weekly-export-icon:hover:not(:disabled) {
+  color: #ffffff;
+  background: #175cd3;
+  border-color: #175cd3;
+}
+
+/* Propósito: reducir el espacio superior de la tabla porque ahora tiene su propia barra de acciones. */
+.home-table-actions-row + .home-table-wrapper {
+  padding-top: 10px;
+}
+
+@media (max-width: 640px) {
+  .home-table-actions-row {
+    padding: 14px 16px 0;
   }
 }
