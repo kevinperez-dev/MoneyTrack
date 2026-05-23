@@ -1,6 +1,8 @@
 // Archivo: src/services/movementsApi.js
 // Propósito: conectar React con la API protegida de movimientos y normalizar historial de ajustes.
 
+import { getAuthToken } from '../utils/session.js';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 // Propósito: convertir errores técnicos en mensajes claros para el usuario.
@@ -36,10 +38,6 @@ function getFriendlyMovementMessage(message = '') {
 }
 
 
-// Propósito: obtener el token desde localStorage y mantener compatibilidad con sessionStorage.
-function getAuthToken() {
-  return localStorage.getItem('pegasoToken') || sessionStorage.getItem('pegasoToken');
-}
 
 // Propósito: convertir fechas del backend a formato YYYY-MM-DD para usarlas en formularios y tablas.
 function normalizeDate(value) {

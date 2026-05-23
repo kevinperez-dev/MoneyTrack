@@ -4,6 +4,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { loginUser } from '../services/authApi';
+import { setLoginSession } from '../utils/session.js';
 import '../styles/login.css';
 
 function Login() {
@@ -65,9 +66,6 @@ function Login() {
       // Propósito: validar credenciales contra el backend.
       const result = await loginUser(form.username.trim(), form.password.trim());
 
-      // Propósito: ver exactamente qué está regresando el backend.
-      console.log('Respuesta del login:', result);
-
       // Propósito: validar que exista token antes de guardar sesión.
       if (!result?.token) {
         throw new Error('No se pudo iniciar sesión. Intenta nuevamente.');
@@ -76,11 +74,8 @@ function Login() {
       // Propósito: evitar que falle si result.user no viene completo.
       const user = result.user || {};
 
-      // Propósito: guardar sesión local para que Home no regrese al login.
-      localStorage.setItem('pegasoToken', result.token);
-      localStorage.setItem('pegasoAuth', '1');
-      localStorage.setItem('pegasoUser', user.username || form.username.trim());
-      localStorage.setItem('pegasoRole', user.role || 'admin');
+      // Propósito: guardar sesión temporal; se borra al cerrar la pestaña y vence por inactividad.
+      setLoginSession(user.username || form.username.trim(), result.token, user.role || 'admin');
 
       // Propósito: enviar al usuario a la pantalla inicial.
       navigate('/inicio', { replace: true });

@@ -1,55 +1,13 @@
 // Archivo: src/App.jsx
-// Propósito: definir las rutas principales del frontend, incluyendo reportes separados por ingresos y egresos.
-import { useEffect } from 'react';
+// Propósito: definir las rutas principales del frontend sin cierre automático por inactividad.
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
 
 import Login from './pages/Login.jsx';
 import Home from './pages/Home.jsx';
 import Dashboard from './pages/Dashboard.jsx';
 import Reports from './pages/Reports.jsx';
-import { logoutSession } from './utils/common.js';
 
 function App() {
-  // Cierra sesión después de 15 minutos de inactividad
-  useEffect(() => {
-    const maxInactiveTime = 15 * 60 * 1000;
-
-    const updateActivity = () => {
-      if (sessionStorage.getItem('pegasoAuth') === '1') {
-        sessionStorage.setItem('pegasoLastActivity', String(Date.now()));
-      }
-    };
-
-    const checkInactiveSession = () => {
-      const lastActivity = Number(sessionStorage.getItem('pegasoLastActivity') || 0);
-
-      if (!lastActivity) return;
-
-      const inactiveTime = Date.now() - lastActivity;
-
-      if (inactiveTime >= maxInactiveTime) {
-        logoutSession();
-        window.location.href = '/login';
-      }
-    };
-
-    const events = ['mousemove', 'keydown', 'click', 'scroll', 'touchstart'];
-
-    events.forEach((eventName) => {
-      window.addEventListener(eventName, updateActivity);
-    });
-
-    const intervalId = window.setInterval(checkInactiveSession, 30000);
-
-    return () => {
-      events.forEach((eventName) => {
-        window.removeEventListener(eventName, updateActivity);
-      });
-
-      window.clearInterval(intervalId);
-    };
-  }, []);
-
   return (
     <BrowserRouter>
       <Routes>

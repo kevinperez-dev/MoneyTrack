@@ -3,7 +3,7 @@
 
 import { Link, useNavigate } from 'react-router-dom';
 import { useState } from 'react';
-import { getCurrentUser, logoutSession } from '../utils/common.js';
+import { getCurrentUser, logoutSession } from '../utils/session.js';
 
 function Header({
     activePage = '',

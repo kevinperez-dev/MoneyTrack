@@ -2,17 +2,18 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Header from '../components/Header.jsx';
 
+import Toast from '../components/ui/Toast.jsx';
+import { getCurrentISOWeek, getISOWeekInfo, getMaxAllowedWeekForYear, getTodayISO, getWeekLabel, formatShortDate } from '../utils/dates.js';
+import { exportRowsToExcelXml } from '../utils/excel.js';
+import { generateAutoFolio } from '../utils/folio.js';
 import {
-  exportRowsToExcelXml,
-  formatAmount,
-  generateAutoFolio,
-  getCurrentISOWeek,
-  getISOWeekInfo,
-  getMaxAllowedWeekForYear,
-  getTodayISO,
-  getWeekLabel,
-  isAuthenticated,
-} from '../utils/common.js';
+  CURRENCY_OPTIONS,
+  formatMoneyByCurrency,
+  getAmountForCurrencyColumn,
+  isCurrencySelected,
+  isDollarCurrency,
+} from '../utils/money.js';
+import { isAuthenticated } from '../utils/session.js';
 
 import {
   createMovement,
@@ -41,85 +42,6 @@ const modeConfig = {
     excelHeaderColor: '#F0DC84'
   }
 };
-
-const CURRENCY_OPTIONS = [
-  {
-    value: 'Dolares',
-    label: 'Dólares',
-    symbol: '$',
-    helper: 'Dólares'
-  },
-  {
-    value: 'Pesos',
-    label: 'Pesos',
-    symbol: '$',
-    helper: 'Moneda nacional'
-  }
-];
-
-// Normaliza el nombre de moneda para comparar pesos y dólares sin depender de acentos.
-function normalizeCurrencyName(currency) {
-  return String(currency || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-// Revisa si una opción de moneda debe mostrarse marcada.
-function isCurrencySelected(currentCurrency, optionCurrency) {
-  return normalizeCurrencyName(currentCurrency) === normalizeCurrencyName(optionCurrency);
-}
-
-// Da formato a los importes usando únicamente el símbolo $ para ambas monedas.
-function formatMoneyByCurrency(amount) {
-  return `$${formatAmount(amount || 0)}`;
-}
-
-// Identifica si el movimiento pertenece a pesos o dólares para separarlo en columnas.
-function isDollarCurrency(currency) {
-  const normalizedCurrency = normalizeCurrencyName(currency);
-  return normalizedCurrency.includes('dolar') || normalizedCurrency.includes('usd');
-}
-
-// Muestra el monto solo en la columna de la moneda correspondiente.
-function getAmountForCurrencyColumn(record, targetCurrency) {
-  const shouldShowAmount =
-    targetCurrency === 'Dólares'
-      ? isDollarCurrency(record.moneda)
-      : !isDollarCurrency(record.moneda);
-
-  return shouldShowAmount && Number(record.cantidad || 0) > 0
-    ? formatMoneyByCurrency(record.cantidad, targetCurrency)
-    : '--';
-}
-
-// Convierte una fecha YYYY-MM-DD a formato corto, por ejemplo 04/may.
-function formatShortDate(dateValue) {
-  if (!dateValue) return '';
-
-  const [year, month, day] = String(dateValue).split('-');
-
-  const monthNames = {
-    '01': 'ene',
-    '02': 'feb',
-    '03': 'mar',
-    '04': 'abr',
-    '05': 'may',
-    '06': 'jun',
-    '07': 'jul',
-    '08': 'ago',
-    '09': 'sep',
-    '10': 'oct',
-    '11': 'nov',
-    '12': 'dic'
-  };
-
-  if (!year || !month || !day || !monthNames[month]) {
-    return dateValue;
-  }
-
-  return `${day}/${monthNames[month]}`;
-}
 
 function Dashboard() {
   const navigate = useNavigate();
@@ -791,31 +713,7 @@ function Dashboard() {
         </section>
       </main>
 
-      {toast && (
-        <div className={`toast-message ${toast.type} show`}>
-          <div className="toast-icon">
-            <span className="material-icons-outlined">
-              {toast.type === 'success' ? 'check_circle' : 'error'}
-            </span>
-          </div>
-
-          <div className="toast-content">
-            <div className="toast-title">{toast.title}</div>
-            <div className="toast-text">{toast.text}</div>
-          </div>
-
-          <button
-            type="button"
-            className="toast-close"
-            onClick={() => setToast(null)}
-            aria-label="Cerrar notificación"
-          >
-            <span className="material-icons-outlined">close</span>
-          </button>
-
-          <div className="toast-progress animate"></div>
-        </div>
-      )}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </>
   );
 }

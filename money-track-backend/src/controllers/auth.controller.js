@@ -51,7 +51,8 @@ async function login(req, res) {
       });
     }
 
-    // Crear token de sesión
+    // Crear token de sesión sin expiración automática por tiempo.
+    // La sesión se cerrará únicamente cuando el usuario presione "Cerrar sesión".
     const token = jwt.sign(
       {
         id: user.id,
@@ -59,10 +60,6 @@ async function login(req, res) {
         role: user.role,
       },
       process.env.JWT_SECRET,
-      {
-        // El token expira después de 15 minutos
-        expiresIn: '15m',      
-        },
     );
 
     // Responder datos seguros del usuario

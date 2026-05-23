@@ -1,6 +1,8 @@
 // Archivo: src/services/authApi.js
 // Propósito: centralizar las peticiones de autenticación del sistema.
 
+import { getAuthToken } from '../utils/session.js';
+
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:4000/api';
 
 // Propósito: convertir errores técnicos en mensajes claros para el usuario.
@@ -93,11 +95,9 @@ export async function loginUser(username, password) {
 
 // Propósito: consultar la sesión actual.
 export async function getCurrentSession() {
-  const token = localStorage.getItem('pegasoToken') || sessionStorage.getItem('pegasoToken');
-
   const response = await fetchWithTimeout(`${API_BASE_URL}/auth/me`, {
     headers: {
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${getAuthToken()}`,
     },
   });
 

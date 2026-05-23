@@ -12,93 +12,18 @@ import {
   updateMovement,
 } from '../services/movementsApi.js';
 
+import Toast from '../components/ui/Toast.jsx';
+import { getCurrentISOWeek, getISOWeekInfo, getMaxAllowedWeekForYear, getWeekLabel, formatShortDate } from '../utils/dates.js';
+import { exportRowsToExcelXml } from '../utils/excel.js';
 import {
-  exportRowsToExcelXml,
-  formatAmount,
-  getCurrentISOWeek,
-  getISOWeekInfo,
-  getMaxAllowedWeekForYear,
-  getWeekLabel,
-  isAuthenticated
-} from '../utils/common.js';
-
-const CURRENCY_OPTIONS = [
-  {
-    value: 'Dolares',
-    label: 'Dólares',
-    symbol: '$',
-    helper: 'Dólares'
-  },
-  {
-    value: 'Pesos',
-    label: 'Pesos',
-    symbol: '$',
-    helper: 'Moneda nacional'
-  }
-];
-
-// Propósito: normalizar el nombre de moneda para comparar pesos y dólares sin depender de acentos.
-function normalizeCurrencyName(currency) {
-  return String(currency || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase();
-}
-
-// Propósito: revisar si una opción de moneda debe mostrarse marcada.
-function isCurrencySelected(currentCurrency, optionCurrency) {
-  return normalizeCurrencyName(currentCurrency) === normalizeCurrencyName(optionCurrency);
-}
-
-// Propósito: dar formato a los importes usando únicamente el símbolo $ para ambas monedas.
-function formatMoneyByCurrency(amount) {
-  return `$${formatAmount(amount || 0)}`;
-}
-
-// Propósito: identificar si el movimiento pertenece a pesos o dólares para separarlo en columnas.
-function isDollarCurrency(currency) {
-  const normalizedCurrency = normalizeCurrencyName(currency);
-  return normalizedCurrency.includes('dolar') || normalizedCurrency.includes('usd');
-}
-
-// Propósito: mostrar el monto solo en la columna de la moneda correspondiente.
-function getAmountForCurrencyColumn(record, targetCurrency) {
-  const shouldShowAmount =
-    targetCurrency === 'Dólares'
-      ? isDollarCurrency(record.moneda)
-      : !isDollarCurrency(record.moneda);
-
-  return shouldShowAmount ? formatMoneyByCurrency(record.cantidad, targetCurrency) : '—';
-}
-
-// Propósito: convertir una fecha YYYY-MM-DD a formato corto, ejemplo 04/may.
-function formatShortDate(dateValue) {
-  if (!dateValue) return '';
-
-  // Propósito: separar manualmente la fecha para evitar desfases por zona horaria.
-  const [year, month, day] = String(dateValue).split('-');
-
-  const monthNames = {
-    '01': 'ene',
-    '02': 'feb',
-    '03': 'mar',
-    '04': 'abr',
-    '05': 'may',
-    '06': 'jun',
-    '07': 'jul',
-    '08': 'ago',
-    '09': 'sep',
-    '10': 'oct',
-    '11': 'nov',
-    '12': 'dic',
-  };
-
-  if (!year || !month || !day || !monthNames[month]) {
-    return dateValue;
-  }
-
-  return `${day}/${monthNames[month]}`;
-}
+  CURRENCY_OPTIONS,
+  formatMoneyByCurrency,
+  getAmountForCurrencyColumn,
+  isCurrencySelected,
+  isDollarCurrency,
+  normalizeCurrencyName,
+} from '../utils/money.js';
+import { isAuthenticated } from '../utils/session.js';
 
 // Propósito: revisar si el movimiento tiene una edición guardada en movement_edits.
 function hasAmountAdjustment(record) {
@@ -1630,31 +1555,7 @@ function Reports({ reportType = 'ingreso' }) {
         </div>
       )}
 
-      {toast && (
-        <div className={`toast-message ${toast.type} show`}>
-          <div className="toast-icon">
-            <span className="material-icons-outlined">
-              {toast.type === 'success' ? 'check_circle' : 'error'}
-            </span>
-          </div>
-
-          <div className="toast-content">
-            <div className="toast-title">{toast.title}</div>
-            <div className="toast-text">{toast.text}</div>
-          </div>
-
-          <button
-            type="button"
-            className="toast-close"
-            onClick={() => setToast(null)}
-            aria-label="Cerrar notificación"
-          >
-            <span className="material-icons-outlined">close</span>
-          </button>
-
-          <div className="toast-progress animate"></div>
-        </div>
-      )}
+      <Toast toast={toast} onClose={() => setToast(null)} />
     </>
   );
 }

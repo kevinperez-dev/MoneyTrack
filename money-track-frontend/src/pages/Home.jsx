@@ -1,20 +1,33 @@
 // Archivo: src/pages/Home.jsx
 // Propósito: vista inicial tipo Excel para control semanal de caja chica por moneda
 
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import Header from '../components/Header.jsx';
 import { getMovements } from '../services/movementsApi.js';
 
-import {
-    formatAmount,
-    getCurrentISOWeek,
-    getISOWeekInfo,
-    getMaxAllowedWeekForYear,
-    getWeekLabel,
-    isAuthenticated
-} from '../utils/common.js';
+import { getCurrentISOWeek, getISOWeekInfo, getISOWeekStart, getMaxAllowedWeekForYear, getWeekLabel, formatShortDate } from '../utils/dates.js';
+import { getCurrencyBucket, renderCurrencyAmount } from '../utils/money.js';
+import { isAuthenticated } from '../utils/session.js';
+
+
+// Propósito: cargar el saldo inicial guardado por semana y moneda.
+function getStoredBalances(year, weekNumber) {
+    const oldSingleBalanceKey = `pegasoSaldoInicial_${year}_${weekNumber}`;
+    const pesosKey = `moneyTrackSaldoInicialPesos_${year}_${weekNumber}`;
+    const dollarsKey = `moneyTrackSaldoInicialDolares_${year}_${weekNumber}`;
+
+    return {
+        pesos: localStorage.getItem(pesosKey) ?? localStorage.getItem(oldSingleBalanceKey) ?? '0',
+        dolares: localStorage.getItem(dollarsKey) ?? '0'
+    };
+}
+
+// Propósito: convertir año/semana ISO en un valor numérico comparable.
+function getWeekStartTime(year, weekNumber) {
+    return getISOWeekStart(Number(year), Number(weekNumber)).getTime();
+}
 
 function Home() {
     const navigate = useNavigate();
@@ -30,18 +43,6 @@ function Home() {
     const currentWeek = getCurrentISOWeek();
     const [period, setPeriod] = useState(String(currentWeek.year));
     const [week, setWeek] = useState(String(currentWeek.week));
-
-    // Función auxiliar para cargar el saldo inicial guardado por semana y moneda
-    const getStoredBalances = (year, weekNumber) => {
-        const oldSingleBalanceKey = `pegasoSaldoInicial_${year}_${weekNumber}`;
-        const pesosKey = `moneyTrackSaldoInicialPesos_${year}_${weekNumber}`;
-        const dollarsKey = `moneyTrackSaldoInicialDolares_${year}_${weekNumber}`;
-
-        return {
-            pesos: localStorage.getItem(pesosKey) ?? localStorage.getItem(oldSingleBalanceKey) ?? '0',
-            dolares: localStorage.getItem(dollarsKey) ?? '0'
-        };
-    };
 
     // Saldo inicial temporal por semana y moneda
     // Después se puede guardar en PostgreSQL con una tabla weekly_balances
@@ -66,24 +67,6 @@ function Home() {
         : weeks.length > 0
             ? String(weeks[0])
             : String(currentWeek.week);
-
-    // Normaliza el texto de moneda para separar pesos y dólares sin depender de acentos
-    const normalizeCurrency = (currency) => {
-        const cleanCurrency = String(currency || '')
-            .normalize('NFD')
-            .replace(/[\u0300-\u036f]/g, '')
-            .toLowerCase();
-
-        return cleanCurrency.includes('dolar') || cleanCurrency.includes('usd')
-            ? 'dolares'
-            : 'pesos';
-    };
-
-    // Renderiza importes en pesos o dólares usando únicamente el símbolo $.
-    // Si el monto es cero, muestra -- para que la tabla sea más limpia.
-    const renderCurrencyAmount = (amount) => {
-        return Number(amount || 0) === 0 ? '--' : `$${formatAmount(amount || 0)}`;
-    };
 
     // Renderiza celdas de ingresos/egresos; si no hay importe, muestra --.
     const renderMovementAmount = (amount) => {
@@ -121,56 +104,12 @@ function Home() {
         return `${parts[0]}.${parts.slice(1).join('').slice(0, 2)}`;
     };
 
-    // Convierte una fecha YYYY-MM-DD a formato corto, ejemplo 11/may.
-    const formatShortDate = (dateValue) => {
-        if (!dateValue) return '';
-
-        const [year, month, day] = String(dateValue).split('-');
-        const monthNames = {
-            '01': 'ene',
-            '02': 'feb',
-            '03': 'mar',
-            '04': 'abr',
-            '05': 'may',
-            '06': 'jun',
-            '07': 'jul',
-            '08': 'ago',
-            '09': 'sep',
-            '10': 'oct',
-            '11': 'nov',
-            '12': 'dic'
-        };
-
-        if (!year || !month || !day || !monthNames[month]) {
-            return dateValue;
-        }
-
-        return `${day}/${monthNames[month]}`;
-    };
-
     // Carga el saldo inicial manual correspondiente cuando cambia el periodo o la semana.
-    const loadStartingBalances = (year, weekNumber) => {
+    const loadStartingBalances = useCallback((year, weekNumber) => {
         const storedBalances = getStoredBalances(year, weekNumber);
         setManualStartingBalancePesos(storedBalances.pesos);
         setManualStartingBalanceDolares(storedBalances.dolares);
-    };
-
-    // Obtiene el lunes de una semana ISO para poder ordenar semanas de diferentes años.
-    const getISOWeekStartDate = (year, weekNumber) => {
-        const janFourth = new Date(Date.UTC(Number(year), 0, 4));
-        const janFourthDay = janFourth.getUTCDay() || 7;
-        const firstMonday = new Date(janFourth);
-
-        firstMonday.setUTCDate(janFourth.getUTCDate() - janFourthDay + 1);
-        firstMonday.setUTCDate(firstMonday.getUTCDate() + (Number(weekNumber) - 1) * 7);
-
-        return firstMonday;
-    };
-
-    // Convierte año/semana en un valor numérico comparable.
-    const getWeekStartTime = (year, weekNumber) => {
-        return getISOWeekStartDate(year, weekNumber).getTime();
-    };
+    }, []);
 
     // Movimientos activos que sí participan en saldos.
     const activeRecords = useMemo(() => {
@@ -222,7 +161,7 @@ function Home() {
                 }
 
                 const amount = Number(record.cantidad || 0);
-                const currency = normalizeCurrency(record.moneda);
+                const currency = getCurrencyBucket(record.moneda);
                 const multiplier = record.tipo === 'ingreso' ? 1 : -1;
 
                 if (currency === 'dolares') {
@@ -327,7 +266,7 @@ function Home() {
             (accumulator, record) => {
                 const amount = Number(record.cantidad || 0);
                 const isIncome = record.tipo === 'ingreso';
-                const currency = normalizeCurrency(record.moneda);
+                const currency = getCurrencyBucket(record.moneda);
                 const isPesos = currency === 'pesos';
 
                 const ingresoPesos = isIncome && isPesos ? amount : null;
@@ -376,7 +315,7 @@ function Home() {
         const weeklyTotals = weeklyRecords.reduce(
             (accumulator, record) => {
                 const amount = Number(record.cantidad || 0);
-                const currency = normalizeCurrency(record.moneda);
+                const currency = getCurrencyBucket(record.moneda);
                 const isIncome = record.tipo === 'ingreso';
 
                 if (isIncome && currency === 'pesos') {
@@ -461,7 +400,7 @@ function Home() {
         }
 
         loadHomeData();
-    }, [navigate]);
+    }, [navigate, currentWeek.year, currentWeek.week, loadStartingBalances]);
 
     // Estilos globales para esta vista
     useEffect(() => {
