@@ -2,7 +2,14 @@
 // Propósito: centralizar la impresión de etiquetas para que Movimientos y Reportes usen exactamente el mismo formato.
 
 import { formatShortDate, getISOWeekInfo } from './dates.js';
-import { getAmountForCurrencyColumn, isDollarCurrency } from './money.js';
+import { formatMoneyByCurrency, isDollarCurrency } from './money.js';
+
+// Propósito: centralizar las medidas de impresión para la EC-PM-58110.
+const THERMAL_PAGE_WIDTH_MM = 58;
+const THERMAL_PAGE_HEIGHT_MM = 128;
+const THERMAL_CONTENT_WIDTH_MM = 52;
+const THERMAL_SAFE_TOP_MM = 2;
+const THERMAL_SAFE_BOTTOM_MM = 4;
 
 // Propósito: evitar que textos capturados por el usuario rompan el HTML de impresión.
 function escapeHtml(value) {
@@ -25,36 +32,34 @@ function getFooterText(record) {
 function buildLabelData(record) {
   const safeRecord = record || {};
   const info = getISOWeekInfo(safeRecord.fecha);
-  const dollarAmount = getAmountForCurrencyColumn(safeRecord, 'Dólares');
-  const pesoAmount = getAmountForCurrencyColumn(safeRecord, 'Pesos');
   const isDollar = isDollarCurrency(safeRecord.moneda);
 
   return {
     folio: safeRecord.folio || '00000000',
     fecha: formatShortDate(safeRecord.fecha),
     semana: info.week,
-    nombre: safeRecord.nombre || 'Movimiento de muestra',
-    concepto: safeRecord.descripcion || 'Descripción breve del movimiento.',
-    monto: isDollar ? dollarAmount : pesoAmount,
-    moneda: isDollar ? 'Dólares' : 'Pesos',
+    nombre: String(safeRecord.nombre || '').trim() || 'Movimiento de muestra',
+    concepto: String(safeRecord.descripcion || '').trim() || 'Descripción breve del movimiento.',
+    monto: formatMoneyByCurrency(safeRecord.cantidad || 0, safeRecord.moneda),
+    moneda: isDollar ? 'Dólares' : safeRecord.moneda || 'Sin seleccionar',
     footerText: getFooterText(safeRecord),
   };
 }
 
-// Propósito: generar el HTML imprimible con un diseño de recibo limpio, compacto y con jerarquía visual clara.
+// Propósito: generar el HTML imprimible optimizado para ticket térmico de 58 mm con área útil real de 48 mm.
 function buildPrintableLabelHtml(record) {
   const data = buildLabelData(record);
-  const logoUrl = `${window.location.origin}/snoopy-laptop-removebg-preview.png`;
 
   return `
     <!doctype html>
     <html lang="es">
       <head>
         <meta charset="utf-8" />
-        <title>Movimiento ${escapeHtml(data.folio)}</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+        <title></title>
         <style>
           @page {
-            size: auto;
+            size: ${THERMAL_PAGE_WIDTH_MM}mm ${THERMAL_PAGE_HEIGHT_MM}mm;
             margin: 0;
           }
 
@@ -64,296 +69,278 @@ function buildPrintableLabelHtml(record) {
 
           html,
           body {
-            width: 100%;
+            width: ${THERMAL_PAGE_WIDTH_MM}mm;
+            min-width: ${THERMAL_PAGE_WIDTH_MM}mm;
             margin: 0;
             padding: 0;
             background: #ffffff;
-            color: #111111;
+            color: #000000;
             font-family: Arial, Helvetica, sans-serif;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
           }
 
           body {
-            display: block;
+            overflow: visible;
           }
 
+          /* Propósito: definir el área de papel sin depender de la vista previa del navegador. */
           .print-page {
-            width: 100%;
+            width: ${THERMAL_PAGE_WIDTH_MM}mm;
+            max-width: ${THERMAL_PAGE_WIDTH_MM}mm;
             margin: 0;
-            padding: 4mm 0 3mm;
+            padding: ${THERMAL_SAFE_TOP_MM}mm 0 ${THERMAL_SAFE_BOTTOM_MM}mm;
             background: #ffffff;
-            text-align: center;
           }
 
-          .receipt {
-            width: 80mm;
-            max-width: 80mm;
+          /* Propósito: mantener el mismo contenido que la vista previa de Movimientos en formato térmico. */
+          .label-sheet {
+            width: ${THERMAL_CONTENT_WIDTH_MM}mm;
+            max-width: ${THERMAL_CONTENT_WIDTH_MM}mm;
             margin: 0 auto;
-            padding: 4mm 4mm 3mm;
+            padding: 0;
             background: #ffffff;
-            color: #111111;
-            text-align: left;
+            color: #000000;
+            border: none;
+            border-radius: 0;
+            box-shadow: none;
             page-break-inside: avoid;
             break-inside: avoid;
+            text-align: center;
           }
 
-          .receipt-card {
-            width: 100%;
-            border: 1px solid #222222;
-            border-radius: 9px;
-            padding: 4mm 4mm 3.5mm;
-          }
-
-          .receipt-header {
-            padding-bottom: 7px;
-            border-bottom: 1px solid #d4d4d4;
-          }
-
-          .brand-main {
+          .label-top {
             display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            gap: 8px;
-            min-height: 31px;
-          }
-
-          .brand-logo {
-            width: 28px;
-            height: 28px;
-            object-fit: contain;
-            display: block;
-            flex: 0 0 auto;
-          }
-
-          .brand-copy {
-            display: flex;
-            min-width: 0;
             flex-direction: column;
+            align-items: center;
             justify-content: center;
-            line-height: 1.15;
-          }
-
-          .brand-name {
-            display: block;
-            font-size: 14px;
-            font-weight: 700;
-            letter-spacing: 0.01em;
-          }
-
-          .brand-subtitle {
-            display: block;
-            margin-top: 2px;
-            font-size: 8px;
-            font-weight: 400;
-            letter-spacing: 0.03em;
-          }
-
-          .document-title {
-            margin-top: 6px;
-            padding: 4px 6px;
-            border: 1px solid #d7d7d7;
-            border-radius: 999px;
-            background: #f7f7f7;
+            gap: 1mm;
+            padding-bottom: 1.2mm;
+            margin-bottom: 0.8mm;
+            border-bottom: 1px solid #000000;
             text-align: center;
-            font-size: 7.5px;
+          }
+
+          .label-brand {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5mm;
+            text-align: center;
+          }
+
+          .label-brand img {
+            display: block;
+            width: 10mm;
+            height: 10mm;
+            object-fit: contain;
+            margin: 0 auto;
+          }
+
+          .label-brand h3 {
+            margin: 0;
+            font-size: 15px;
+            line-height: 1.05;
+            font-weight: 800;
+            color: #000000;
+          }
+
+          .label-brand p {
+            margin: 1px 0 0;
+            font-size: 8.5px;
+            line-height: 1.1;
             font-weight: 600;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
+            color: #000000;
           }
 
-          .receipt-meta {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 6px;
-            margin-top: 8px;
-          }
-
-          .meta-box {
-            min-height: 34px;
-            border: 1px solid #d2d2d2;
-            border-radius: 8px;
-            padding: 6px;
+          .label-code-box {
+            width: 100%;
+            padding: 0.4mm 0 0;
+            border: none;
+            background: #ffffff;
+            color: #000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
             text-align: center;
           }
 
-          .meta-box small {
+          .label-mini-title,
+          .field-title {
             display: block;
-            margin-bottom: 3px;
-            font-size: 7px;
-            font-weight: 700;
-            letter-spacing: 0.10em;
+            margin: 0 0 0.4mm;
+            font-size: 7.2px;
+            line-height: 1.05;
+            font-weight: 800;
+            letter-spacing: 0.06em;
+            color: #000000;
             text-transform: uppercase;
           }
 
-          .meta-box span:last-child {
+          .label-code-box strong {
             display: block;
             font-size: 12px;
-            font-weight: 400;
-            line-height: 1.15;
+            line-height: 1.1;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            color: #000000;
             word-break: break-word;
           }
 
-          .status {
-            margin: 8px 0 7px;
-            padding: 5px 8px;
-            border-radius: 999px;
-            border: 1px solid #d2d2d2;
-            text-align: center;
-            font-size: 8px;
-            font-weight: 500;
-            letter-spacing: 0.08em;
-            text-transform: uppercase;
-          }
-
-          .amount-box {
-            margin: 0 0 8px;
-            padding: 8px 8px 7px;
-            border-radius: 10px;
-            background: #f5f5f5;
-            border: 1px solid #d2d2d2;
-            text-align: center;
-          }
-
-          .amount-label {
-            display: block;
-            margin-bottom: 4px;
-            font-size: 8px;
-            font-weight: 700;
-            letter-spacing: 0.11em;
-            text-transform: uppercase;
-          }
-
-          .amount-value {
-            display: block;
-            font-size: 19px;
-            line-height: 1.05;
-            font-weight: 400;
-          }
-
-          .amount-currency {
-            display: block;
-            margin-top: 3px;
-            font-size: 9px;
-            font-weight: 500;
-          }
-
-          .details {
+          .label-body {
             display: flex;
             flex-direction: column;
-            gap: 5px;
-          }
-
-          .detail-row {
-            border-bottom: 1px dotted #6b7280;
-            padding-bottom: 5px;
+            gap: 0;
             text-align: center;
           }
 
-          .detail-row:last-child {
-            border-bottom: none;
+          .label-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.2mm;
+            padding: 0.8mm 0;
+            border-bottom: 1px dashed #000000;
           }
 
-          .detail-label {
-            display: block;
-            margin-bottom: 2px;
-            font-size: 7px;
-            font-weight: 700;
-            letter-spacing: 0.10em;
-            text-transform: uppercase;
+          .label-field {
+            min-height: 0;
+            padding: 0;
+            border: none;
+            background: #ffffff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
           }
 
-          .detail-value {
+          .label-field.full {
+            grid-column: 1 / -1;
+          }
+
+          .label-field span:last-child {
             display: block;
-            font-size: 10px;
-            line-height: 1.25;
-            font-weight: 400;
+            font-size: 10.5px;
+            line-height: 1.15;
+            font-weight: 600;
+            color: #000000;
             word-break: break-word;
+            text-align: center;
           }
 
-          .verification {
-            margin-top: 8px;
-            padding-top: 7px;
-            border-top: 1px solid #d4d4d4;
+          .label-footer {
+            margin-top: 1.4mm;
+            padding-top: 1.4mm;
+            border-top: 1px solid #000000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 1.5mm;
             text-align: center;
+          }
+
+          .barcode-box {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0.8mm;
           }
 
           .barcode {
-            width: 100%;
-            height: 22px;
-            border: 1px solid #222222;
-            border-radius: 5px;
+            width: 92%;
+            height: 8mm;
+            border: none;
             background: repeating-linear-gradient(
               90deg,
-              #111111 0px,
-              #111111 2px,
+              #000000 0px,
+              #000000 2px,
               #ffffff 2px,
               #ffffff 4px,
-              #111111 4px,
-              #111111 7px,
+              #000000 4px,
+              #000000 7px,
               #ffffff 7px,
               #ffffff 9px
             );
           }
 
-          .barcode-number {
+          .barcode-box span {
             display: block;
-            margin-top: 4px;
-            font-size: 8px;
-            font-weight: 500;
-            letter-spacing: 0.08em;
+            font-size: 10px;
+            line-height: 1.1;
+            font-weight: 800;
+            letter-spacing: 0.04em;
+            color: #000000;
+            word-break: break-word;
           }
 
-          .signature {
-            margin-top: 12px;
+          .signature-area {
+            width: 100%;
+            margin-top: 0.8mm;
+            padding-top: 1.8mm;
             text-align: center;
           }
 
           .signature-line {
-            width: 68%;
+            width: 78%;
             height: 1px;
-            background: #222222;
-            margin: 0 auto 5px;
+            background: #000000;
+            margin: 0 auto 1mm;
           }
 
-          .signature strong {
-            display: block;
-            font-size: 9px;
+          .signature-label {
+            font-size: 10px;
+            line-height: 1.1;
+            font-weight: 800;
+            color: #000000;
+          }
+
+          .signature-note,
+          .print-note {
+            margin-top: 0.5mm;
+            font-size: 7.5px;
+            line-height: 1.15;
             font-weight: 600;
+            color: #000000;
           }
 
-          .signature span {
-            display: block;
-            margin-top: 2px;
-            font-size: 7px;
-          }
-
-          .receipt-note {
-            margin-top: 7px;
-            text-align: center;
-            font-size: 7px;
-            font-weight: 400;
-            letter-spacing: 0.03em;
+          .print-note {
+            margin-top: 0;
+            text-transform: none;
           }
 
           @media print {
+            @page {
+              size: ${THERMAL_PAGE_WIDTH_MM}mm ${THERMAL_PAGE_HEIGHT_MM}mm;
+              margin: 0;
+            }
+
             html,
             body {
-              width: 100% !important;
+              width: ${THERMAL_PAGE_WIDTH_MM}mm !important;
+              min-width: ${THERMAL_PAGE_WIDTH_MM}mm !important;
+              max-width: ${THERMAL_PAGE_WIDTH_MM}mm !important;
               margin: 0 !important;
               padding: 0 !important;
               overflow: visible !important;
               background: #ffffff !important;
+              position: static !important;
             }
 
             .print-page {
-              width: 100% !important;
+              width: ${THERMAL_PAGE_WIDTH_MM}mm !important;
+              max-width: ${THERMAL_PAGE_WIDTH_MM}mm !important;
               margin: 0 !important;
-              padding: 4mm 0 3mm !important;
-              text-align: center !important;
+              padding: ${THERMAL_SAFE_TOP_MM}mm 0 ${THERMAL_SAFE_BOTTOM_MM}mm !important;
+              background: #ffffff !important;
             }
 
-            .receipt {
-              width: 80mm !important;
-              max-width: 80mm !important;
+            .label-sheet {
+              width: ${THERMAL_CONTENT_WIDTH_MM}mm !important;
+              max-width: ${THERMAL_CONTENT_WIDTH_MM}mm !important;
               margin: 0 auto !important;
               page-break-inside: avoid !important;
               break-inside: avoid !important;
@@ -363,69 +350,75 @@ function buildPrintableLabelHtml(record) {
       </head>
       <body>
         <main class="print-page">
-          <section class="receipt">
-            <div class="receipt-card">
-              <header class="receipt-header">
-                <div class="brand-main">
-                  <img class="brand-logo" src="${escapeHtml(logoUrl)}" alt="Snoopy Project" />
-                  <div class="brand-copy">
-                    <span class="brand-name">Snoopy Project</span>
-                    <span class="brand-subtitle">Control de ingresos y egresos</span>
-                  </div>
+          <section class="label-sheet">
+            <div class="label-top">
+              <div class="label-brand">
+                <img src="/snoopy-laptop-removebg-preview.png" alt="Snoopy Project" />
+                <div>
+                  <h3>Snoopy Project</h3>
+                  <p>Comprobante de movimiento</p>
+                </div>
+              </div>
+
+              <div class="label-code-box">
+                <span class="label-mini-title">Folio</span>
+                <strong>${escapeHtml(data.folio)}</strong>
+              </div>
+            </div>
+
+            <div class="label-body">
+              <div class="label-row">
+                <div class="label-field">
+                  <span class="field-title">Fecha</span>
+                  <span>${escapeHtml(data.fecha)}</span>
                 </div>
 
-                <div class="document-title">Comprobante de movimiento</div>
-              </header>
-
-              <div class="receipt-meta">
-                <div class="meta-box">
-                  <small>Folio</small>
-                  <span>${escapeHtml(data.folio)}</span>
-                </div>
-
-                <div class="meta-box">
-                  <small>Semana</small>
+                <div class="label-field">
+                  <span class="field-title">Semana</span>
                   <span>${escapeHtml(data.semana)}</span>
                 </div>
               </div>
 
-              <div class="status">${escapeHtml(data.footerText)}</div>
-
-              <div class="amount-box">
-                <span class="amount-label">Monto</span>
-                <span class="amount-value">${escapeHtml(data.monto)}</span>
-                <span class="amount-currency">${escapeHtml(data.moneda)}</span>
-              </div>
-
-              <div class="details">
-                <div class="detail-row">
-                  <span class="detail-label">Fecha</span>
-                  <span class="detail-value">${escapeHtml(data.fecha)}</span>
-                </div>
-
-                <div class="detail-row">
-                  <span class="detail-label">Nombre</span>
-                  <span class="detail-value">${escapeHtml(data.nombre)}</span>
-                </div>
-
-                <div class="detail-row">
-                  <span class="detail-label">Concepto</span>
-                  <span class="detail-value">${escapeHtml(data.concepto)}</span>
+              <div class="label-row">
+                <div class="label-field full">
+                  <span class="field-title">Nombre</span>
+                  <span>${escapeHtml(data.nombre)}</span>
                 </div>
               </div>
 
-              <div class="verification">
+              <div class="label-row">
+                <div class="label-field full">
+                  <span class="field-title">Concepto</span>
+                  <span>${escapeHtml(data.concepto)}</span>
+                </div>
+              </div>
+
+              <div class="label-row">
+                <div class="label-field">
+                  <span class="field-title">Monto</span>
+                  <span>${escapeHtml(data.monto)}</span>
+                </div>
+
+                <div class="label-field">
+                  <span class="field-title">Moneda</span>
+                  <span>${escapeHtml(data.moneda)}</span>
+                </div>
+              </div>
+            </div>
+
+            <div class="label-footer">
+              <div class="barcode-box">
                 <div class="barcode"></div>
-                <span class="barcode-number">${escapeHtml(data.folio)}</span>
+                <span>${escapeHtml(data.folio)}</span>
               </div>
 
-              <div class="signature">
+              <div class="signature-area">
                 <div class="signature-line"></div>
-                <strong>Firma de recibido</strong>
-                <span>Nombre y firma del responsable</span>
+                <div class="signature-label">Firma de recibido</div>
+                <div class="signature-note">Nombre y firma del responsable</div>
               </div>
 
-              <div class="receipt-note">Documento generado por Snoopy Project</div>
+              <div class="print-note">${escapeHtml(data.footerText)}</div>
             </div>
           </section>
         </main>
@@ -434,39 +427,147 @@ function buildPrintableLabelHtml(record) {
   `;
 }
 
-// Propósito: abrir una ventana limpia de impresión para evitar hojas extra al imprimir desde Movimientos o Reportes.
-export function printMovementLabel(record, options = {}) {
-  const printWindow = window.open('', '_blank', 'width=360,height=720');
+// Propósito: esperar a que las imágenes del recibo carguen antes de mandar a imprimir.
+function waitForPrintableAssets(printDocument) {
+  const images = Array.from(printDocument.images || []);
 
-  if (!printWindow) {
+  if (!images.length) {
+    return Promise.resolve();
+  }
+
+  return Promise.all(
+    images.map((image) => {
+      if (image.complete) {
+        return Promise.resolve();
+      }
+
+      return new Promise((resolve) => {
+        image.onload = resolve;
+        image.onerror = resolve;
+      });
+    }),
+  );
+}
+
+// Propósito: mostrar un botón manual si el navegador bloquea la impresión automática.
+function showManualPrintFallback(printFrame, onAfterPrint) {
+  const previousFallback = document.getElementById('snoopy-print-fallback');
+
+  if (previousFallback) {
+    previousFallback.remove();
+  }
+
+  const fallback = document.createElement('div');
+  fallback.id = 'snoopy-print-fallback';
+  fallback.style.position = 'fixed';
+  fallback.style.right = '18px';
+  fallback.style.bottom = '18px';
+  fallback.style.zIndex = '999999';
+  fallback.style.display = 'flex';
+  fallback.style.alignItems = 'center';
+  fallback.style.gap = '10px';
+  fallback.style.padding = '12px 14px';
+  fallback.style.border = '1px solid #cbd5e1';
+  fallback.style.borderRadius = '14px';
+  fallback.style.background = '#ffffff';
+  fallback.style.boxShadow = '0 18px 45px rgba(15, 23, 42, 0.18)';
+  fallback.style.fontFamily = 'Arial, Helvetica, sans-serif';
+
+  fallback.innerHTML = `
+    <span style="font-size:13px;color:#334155;">No se abrió la impresión automáticamente.</span>
+    <button type="button" id="snoopy-print-fallback-button" style="border:0;border-radius:10px;background:#0f172a;color:white;padding:9px 12px;font-size:13px;font-weight:700;cursor:pointer;">
+      Imprimir comprobante
+    </button>
+    <button type="button" id="snoopy-print-fallback-close" style="border:0;background:transparent;color:#64748b;font-size:18px;line-height:1;cursor:pointer;">
+      ×
+    </button>
+  `;
+
+  document.body.appendChild(fallback);
+
+  const printButton = fallback.querySelector('#snoopy-print-fallback-button');
+  const closeButton = fallback.querySelector('#snoopy-print-fallback-close');
+
+  printButton?.addEventListener('click', () => {
+    printFrame.contentWindow?.focus();
+    printFrame.contentWindow?.print();
+    fallback.remove();
+    onAfterPrint?.();
+  });
+
+  closeButton?.addEventListener('click', () => {
+    fallback.remove();
+  });
+}
+
+// Propósito: imprimir desde un iframe oculto para evitar bloqueos de ventanas emergentes en Chrome/Windows.
+export function printMovementLabel(record, options = {}) {
+  const previousFrame = document.getElementById('snoopy-receipt-print-frame');
+
+  if (previousFrame) {
+    previousFrame.remove();
+  }
+
+  const printFrame = document.createElement('iframe');
+  printFrame.id = 'snoopy-receipt-print-frame';
+  printFrame.title = 'Impresión de comprobante Snoopy Project';
+  printFrame.style.position = 'fixed';
+  printFrame.style.right = '0';
+  printFrame.style.bottom = '0';
+  printFrame.style.width = '1px';
+  printFrame.style.height = '1px';
+  printFrame.style.border = '0';
+  printFrame.style.opacity = '0';
+  printFrame.style.pointerEvents = 'none';
+
+  document.body.appendChild(printFrame);
+
+  const printDocument = printFrame.contentDocument || printFrame.contentWindow?.document;
+
+  if (!printDocument) {
     options.onPopupBlocked?.();
     return false;
   }
 
   let finished = false;
 
-  // Propósito: ejecutar una sola vez la acción posterior a imprimir.
+  // Propósito: limpiar recursos temporales sin cerrar ninguna ventana del navegador.
   const finishPrint = () => {
     if (finished) return;
     finished = true;
     options.onAfterPrint?.();
-    printWindow.close();
+
+    window.setTimeout(() => {
+      printFrame.remove();
+    }, 1000);
   };
 
-  printWindow.document.open();
-  printWindow.document.write(buildPrintableLabelHtml(record));
-  printWindow.document.close();
+  printDocument.open();
+  printDocument.write(buildPrintableLabelHtml(record));
+  printDocument.close();
 
-  printWindow.onafterprint = finishPrint;
+  if (printFrame.contentWindow) {
+    printFrame.contentWindow.onafterprint = finishPrint;
+  }
 
-  // Propósito: esperar un momento para que cargue el logotipo antes de mandar la impresión.
+  // Propósito: esperar a que el DOM del iframe y el logotipo estén listos antes de imprimir.
   window.setTimeout(() => {
-    printWindow.focus();
-    printWindow.print();
+    waitForPrintableAssets(printDocument)
+      .then(() => {
+        printFrame.contentWindow?.focus();
+        printFrame.contentWindow?.print();
 
-    // Propósito: cerrar la ventana aunque el navegador no dispare onafterprint.
-    window.setTimeout(finishPrint, 700);
-  }, 350);
+        // Propósito: dejar un respaldo manual por si Chrome o el driver bloquean el disparo automático.
+        window.setTimeout(() => {
+          if (!finished && document.body.contains(printFrame)) {
+            showManualPrintFallback(printFrame, finishPrint);
+          }
+        }, 1200);
+      })
+      .catch(() => {
+        showManualPrintFallback(printFrame, finishPrint);
+      });
+  }, 250);
 
   return true;
 }
