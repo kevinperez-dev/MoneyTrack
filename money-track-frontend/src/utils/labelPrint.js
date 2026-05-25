@@ -5,9 +5,10 @@ import { formatShortDate, getISOWeekInfo } from './dates.js';
 import { formatMoneyByCurrency, isDollarCurrency } from './money.js';
 
 // Propósito: centralizar las medidas de impresión para la EC-PM-58110.
+// El tamaño se redujo para acercarlo al formato anterior de campos por columnas.
 const THERMAL_PAGE_WIDTH_MM = 58;
-const THERMAL_PAGE_HEIGHT_MM = 128;
-const THERMAL_CONTENT_WIDTH_MM = 52;
+const THERMAL_PAGE_HEIGHT_MM = 205;
+const THERMAL_CONTENT_WIDTH_MM = 56.5;
 const THERMAL_SAFE_TOP_MM = 2;
 const THERMAL_SAFE_BOTTOM_MM = 4;
 
@@ -41,12 +42,12 @@ function buildLabelData(record) {
     nombre: String(safeRecord.nombre || '').trim() || 'Movimiento de muestra',
     concepto: String(safeRecord.descripcion || '').trim() || 'Descripción breve del movimiento.',
     monto: formatMoneyByCurrency(safeRecord.cantidad || 0, safeRecord.moneda),
-    moneda: isDollar ? 'Dólares' : safeRecord.moneda || 'Sin seleccionar',
+    moneda: isDollar ? 'Dólares' : 'Pesos',
     footerText: getFooterText(safeRecord),
   };
 }
 
-// Propósito: generar el HTML imprimible optimizado para ticket térmico de 58 mm con área útil real de 48 mm.
+// Propósito: generar el HTML imprimible optimizado para ticket térmico de 58 mm en formato de lista vertical.
 function buildPrintableLabelHtml(record) {
   const data = buildLabelData(record);
 
@@ -84,7 +85,7 @@ function buildPrintableLabelHtml(record) {
             overflow: visible;
           }
 
-          /* Propósito: definir el área de papel sin depender de la vista previa del navegador. */
+          /* Propósito: definir el área del papel térmico sin depender de la vista previa del navegador. */
           .print-page {
             width: ${THERMAL_PAGE_WIDTH_MM}mm;
             max-width: ${THERMAL_PAGE_WIDTH_MM}mm;
@@ -93,12 +94,12 @@ function buildPrintableLabelHtml(record) {
             background: #ffffff;
           }
 
-          /* Propósito: mantener el mismo contenido que la vista previa de Movimientos en formato térmico. */
+          /* Propósito: usar casi todo el ancho de 58 mm y mantener el contenido pegado a la izquierda. */
           .label-sheet {
             width: ${THERMAL_CONTENT_WIDTH_MM}mm;
             max-width: ${THERMAL_CONTENT_WIDTH_MM}mm;
-            margin: 0 auto;
-            padding: 0;
+            margin: 0;
+            padding: 0 0.5mm 0 0;
             background: #ffffff;
             color: #000000;
             border: none;
@@ -106,209 +107,119 @@ function buildPrintableLabelHtml(record) {
             box-shadow: none;
             page-break-inside: avoid;
             break-inside: avoid;
-            text-align: center;
+            text-align: left;
           }
 
           .label-top {
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 1mm;
+            align-items: flex-start;
+            justify-content: flex-start;
+            gap: 0.8mm;
             padding-bottom: 1.2mm;
-            margin-bottom: 0.8mm;
+            margin-bottom: 0.6mm;
             border-bottom: 1px solid #000000;
-            text-align: center;
+            text-align: left;
           }
 
           .label-brand {
             width: 100%;
             display: flex;
             flex-direction: column;
-            align-items: center;
-            justify-content: center;
+            align-items: flex-start;
+            justify-content: flex-start;
             gap: 0.5mm;
-            text-align: center;
+            text-align: left;
           }
 
           .label-brand img {
             display: block;
-            width: 10mm;
-            height: 10mm;
+            width: 11mm;
+            height: 12mm;
             object-fit: contain;
-            margin: 0 auto;
+            margin: 0;
           }
 
           .label-brand h3 {
             margin: 0;
-            font-size: 15px;
+            font-size: 24px;
             line-height: 1.05;
             font-weight: 800;
             color: #000000;
-          }
-
-          .label-brand p {
-            margin: 1px 0 0;
-            font-size: 8.5px;
-            line-height: 1.1;
-            font-weight: 600;
-            color: #000000;
-          }
-
-          .label-code-box {
-            width: 100%;
-            padding: 0.4mm 0 0;
-            border: none;
-            background: #ffffff;
-            color: #000000;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-          }
-
-          .label-mini-title,
-          .field-title {
-            display: block;
-            margin: 0 0 0.4mm;
-            font-size: 7.2px;
-            line-height: 1.05;
-            font-weight: 800;
-            letter-spacing: 0.06em;
-            color: #000000;
-            text-transform: uppercase;
-          }
-
-          .label-code-box strong {
-            display: block;
-            font-size: 12px;
-            line-height: 1.1;
-            font-weight: 800;
-            letter-spacing: 0.04em;
-            color: #000000;
-            word-break: break-word;
           }
 
           .label-body {
             display: flex;
             flex-direction: column;
             gap: 0;
-            text-align: center;
+            text-align: left;
           }
 
-          .label-row {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.2mm;
-            padding: 0.8mm 0;
-            border-bottom: 1px dashed #000000;
-          }
-
-          .label-field {
-            min-height: 0;
-            padding: 0;
-            border: none;
-            background: #ffffff;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-          }
-
-          .label-field.full {
-            grid-column: 1 / -1;
-          }
-
-          .label-field span:last-child {
+          /* Propósito: imprimir cada dato como una fila simple, no como dos columnas. */
+          .label-line {
             display: block;
-            font-size: 10.5px;
-            line-height: 1.15;
-            font-weight: 600;
+            width: 100%;
+            padding: 1.25mm 0;
+            border-bottom: 1px dashed #000000;
             color: #000000;
+            font-size: 17.5px;
+            line-height: 1.16;
+            font-weight: 400;
+            text-align: left;
             word-break: break-word;
-            text-align: center;
+          }
+
+          /* Propósito: dejar únicamente el título del campo en negritas. */
+          .label-line strong {
+            font-weight: 800;
+            letter-spacing: 0.02em;
+            text-transform: uppercase;
+          }
+
+          /* Propósito: mantener los valores capturados con peso normal. */
+          .label-line span {
+            font-weight: 400;
           }
 
           .label-footer {
-            margin-top: 1.4mm;
-            padding-top: 1.4mm;
-            border-top: 1px solid #000000;
+            margin-top: 5mm;
+            padding-top: 0;
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 1.5mm;
+            gap: 1.2mm;
             text-align: center;
           }
 
-          .barcode-box {
-            width: 100%;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 0.8mm;
-          }
-
-          .barcode {
-            width: 92%;
-            height: 8mm;
-            border: none;
-            background: repeating-linear-gradient(
-              90deg,
-              #000000 0px,
-              #000000 2px,
-              #ffffff 2px,
-              #ffffff 4px,
-              #000000 4px,
-              #000000 7px,
-              #ffffff 7px,
-              #ffffff 9px
-            );
-          }
-
-          .barcode-box span {
-            display: block;
-            font-size: 10px;
-            line-height: 1.1;
-            font-weight: 800;
-            letter-spacing: 0.04em;
-            color: #000000;
-            word-break: break-word;
-          }
-
+          /* Propósito: usar el espacio del código de barras y folio inferior para la firma. */
           .signature-area {
             width: 100%;
-            margin-top: 0.8mm;
-            padding-top: 1.8mm;
+            min-height: 58mm;
+            margin-top: 0;
+            padding-top: 45mm;
             text-align: center;
           }
 
           .signature-line {
-            width: 78%;
+            width: 82%;
             height: 1px;
             background: #000000;
-            margin: 0 auto 1mm;
+            margin: 0 auto 1.2mm;
           }
 
           .signature-label {
-            font-size: 10px;
-            line-height: 1.1;
-            font-weight: 800;
-            color: #000000;
-          }
-
-          .signature-note,
-          .print-note {
-            margin-top: 0.5mm;
-            font-size: 7.5px;
-            line-height: 1.15;
-            font-weight: 600;
+            font-size: 17.5px;
+            line-height: 1.12;
+            font-weight: 400;
             color: #000000;
           }
 
           .print-note {
             margin-top: 0;
+            font-size: 17.5px;
+            line-height: 1.16;
+            font-weight: 400;
+            color: #000000;
             text-transform: none;
           }
 
@@ -341,7 +252,7 @@ function buildPrintableLabelHtml(record) {
             .label-sheet {
               width: ${THERMAL_CONTENT_WIDTH_MM}mm !important;
               max-width: ${THERMAL_CONTENT_WIDTH_MM}mm !important;
-              margin: 0 auto !important;
+              margin: 0 !important;
               page-break-inside: avoid !important;
               break-inside: avoid !important;
             }
@@ -356,66 +267,24 @@ function buildPrintableLabelHtml(record) {
                 <img src="/snoopy-laptop-removebg-preview.png" alt="Snoopy Project" />
                 <div>
                   <h3>Snoopy Project</h3>
-                  <p>Comprobante de movimiento</p>
                 </div>
-              </div>
-
-              <div class="label-code-box">
-                <span class="label-mini-title">Folio</span>
-                <strong>${escapeHtml(data.folio)}</strong>
               </div>
             </div>
 
             <div class="label-body">
-              <div class="label-row">
-                <div class="label-field">
-                  <span class="field-title">Fecha</span>
-                  <span>${escapeHtml(data.fecha)}</span>
-                </div>
-
-                <div class="label-field">
-                  <span class="field-title">Semana</span>
-                  <span>${escapeHtml(data.semana)}</span>
-                </div>
-              </div>
-
-              <div class="label-row">
-                <div class="label-field full">
-                  <span class="field-title">Nombre</span>
-                  <span>${escapeHtml(data.nombre)}</span>
-                </div>
-              </div>
-
-              <div class="label-row">
-                <div class="label-field full">
-                  <span class="field-title">Concepto</span>
-                  <span>${escapeHtml(data.concepto)}</span>
-                </div>
-              </div>
-
-              <div class="label-row">
-                <div class="label-field">
-                  <span class="field-title">Monto</span>
-                  <span>${escapeHtml(data.monto)}</span>
-                </div>
-
-                <div class="label-field">
-                  <span class="field-title">Moneda</span>
-                  <span>${escapeHtml(data.moneda)}</span>
-                </div>
-              </div>
+              <div class="label-line"><strong>Folio:</strong> <span>${escapeHtml(data.folio)}</span></div>
+              <div class="label-line"><strong>Fecha:</strong> <span>${escapeHtml(data.fecha)}</span></div>
+              <div class="label-line"><strong>Semana:</strong> <span>${escapeHtml(data.semana)}</span></div>
+              <div class="label-line"><strong>Nombre:</strong> <span>${escapeHtml(data.nombre)}</span></div>
+              <div class="label-line"><strong>Concepto:</strong> <span>${escapeHtml(data.concepto)}</span></div>
+              <div class="label-line"><strong>Monto:</strong> <span>${escapeHtml(data.monto)}</span></div>
+              <div class="label-line"><strong>Moneda:</strong> <span>${escapeHtml(data.moneda)}</span></div>
             </div>
 
             <div class="label-footer">
-              <div class="barcode-box">
-                <div class="barcode"></div>
-                <span>${escapeHtml(data.folio)}</span>
-              </div>
-
               <div class="signature-area">
                 <div class="signature-line"></div>
                 <div class="signature-label">Firma de recibido</div>
-                <div class="signature-note">Nombre y firma del responsable</div>
               </div>
 
               <div class="print-note">${escapeHtml(data.footerText)}</div>
