@@ -523,87 +523,70 @@ function Dashboard() {
             </form>
           </div>
 
-          <div className="card preview-card">
+          <div className="card preview-card thermal-preview-card">
             <div className="card-header">
-              <h2>Vista previa del movimiento</h2>
-              <span className="mode-pill">{config.pillText}</span>
+              <h2>Vista previa real del ticket</h2>
+              <span className="mode-pill">58 mm</span>
             </div>
 
-            <div className="preview-canvas">
-              <div className="label-sheet" ref={labelSheetRef}>
-                <div className="label-top">
-                  <div className="label-brand">
-                    <img src="/snoopy-laptop-removebg-preview.png" alt="alt" />
-                    <div>
-                      <h3>Snoopy Project</h3>
-                      <p>Comprobante de movimiento</p>
+            <div className="thermal-preview-stage">
+              <div className="thermal-preview-size-note">
+                <span className="material-icons-outlined">receipt_long</span>
+                Vista aproximada del ticket térmico real antes de guardar
+              </div>
+
+              {/* Propósito: mostrar en Movimientos el recibo con las mismas dimensiones y estructura del ticket impreso. */}
+              <div className="thermal-print-page" aria-label="Vista previa del ticket térmico">
+                <section className="thermal-label-sheet" ref={labelSheetRef}>
+                  <div className="thermal-label-top">
+                    <div className="thermal-label-brand">
+                      <div>
+                        <h3>Oficinas TJ</h3>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="label-code-box">
-                    <span className="label-mini-title">Folio</span>
-                    <strong>{folio || '00000000'}</strong>
-                  </div>
-                </div>
-
-                <div className="label-body">
-                  <div className="label-row">
-                    <div className="label-field">
-                      <span className="field-title">Fecha</span>
-                      <span>{formatShortDate(form.fecha || getTodayISO())}</span>
+                  <div className="thermal-label-body">
+                    <div className="thermal-label-line">
+                      <strong>Folio:</strong> <span>{folio || '00000000'}</span>
                     </div>
 
-                    <div className="label-field">
-                      <span className="field-title">Semana</span>
-                      <span>{previewInfo.week}</span>
+                    <div className="thermal-label-line">
+                      <strong>Fecha:</strong> <span>{formatShortDate(form.fecha || getTodayISO())}</span>
                     </div>
-                  </div>
 
-                  <div className="label-row">
-                    <div className="label-field full">
-                      <span className="field-title">Nombre</span>
+                    <div className="thermal-label-line">
+                      <strong>Semana:</strong> <span>{previewInfo.week}</span>
+                    </div>
+
+                    <div className="thermal-label-line thermal-label-line-stacked">
+                      <strong>Nombre:</strong>
                       <span>{form.nombre.trim() || 'Movimiento de muestra'}</span>
                     </div>
-                  </div>
 
-                  <div className="label-row">
-                    <div className="label-field full">
-                      <span className="field-title">Concepto</span>
+                    <div className="thermal-label-line thermal-label-line-stacked">
+                      <strong>Concepto:</strong>
                       <span>{form.descripcion.trim() || 'Descripción breve del movimiento.'}</span>
                     </div>
-                  </div>
 
-                  <div className="label-row">
-                    <div className="label-field">
-                      <span className="field-title">Monto</span>
-                      <span>{formatMoneyByCurrency(form.cantidad || 0, form.moneda)}</span>
+                    <div className="thermal-label-line">
+                      <strong>Monto:</strong> <span>{formatMoneyByCurrency(form.cantidad || 0, form.moneda)}</span>
                     </div>
 
-                    <div className="label-field">
-                      <span className="field-title">Moneda</span>
-                      <span>{isDollarCurrency(form.moneda) ? 'Dólares' : form.moneda || 'Sin seleccionar'}</span>
+                    <div className="thermal-label-line">
+                      <strong>Moneda:</strong> <span>{isDollarCurrency(form.moneda) ? 'Dólares' : form.moneda || 'Sin seleccionar'}</span>
                     </div>
                   </div>
-                </div>
 
-                {/* Pie del ticket con código, firma y nota final */}
-                <div className="label-footer">
-                  <div className="barcode-box">
-                    <div className="barcode"></div>
-                    <span>{folio || '00000000'}</span>
-                  </div>
+                  <div className="thermal-label-footer">
+                    <div className="thermal-signature-area">
+                      <div className="thermal-signature-line"></div>
+                      <div className="thermal-signature-label">Firma de recibido</div>
+                    </div>
 
-                  {/* Espacio físico para firma del responsable */}
-                  <div className="signature-area">
-                    <div className="signature-line"></div>
-                    <div className="signature-label">Firma de recibido</div>
-                    <div className="signature-note">Nombre y firma del responsable</div>
+                    <div className="thermal-print-note">{config.footerText}</div>
                   </div>
-
-                  <div className="print-note">
-                    {config.footerText}
-                  </div>
-                </div>
+                </section>
               </div>
             </div>
           </div>

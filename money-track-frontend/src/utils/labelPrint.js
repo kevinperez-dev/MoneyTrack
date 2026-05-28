@@ -181,6 +181,17 @@ function buildPrintableLabelHtml(record) {
             font-weight: 400;
           }
 
+          /* Propósito: mostrar Nombre y Concepto en dos líneas: título arriba y valor debajo. */
+          .label-line-stacked strong,
+          .label-line-stacked span {
+            display: block;
+          }
+
+          /* Propósito: separar ligeramente el valor para mejorar la lectura del ticket. */
+          .label-line-stacked span {
+            margin-top: 0.8mm;
+          }
+
           .label-footer {
             margin-top: 5mm;
             padding-top: 0;
@@ -264,9 +275,8 @@ function buildPrintableLabelHtml(record) {
           <section class="label-sheet">
             <div class="label-top">
               <div class="label-brand">
-                <img src="/snoopy-laptop-removebg-preview.png" alt="Snoopy Project" />
                 <div>
-                  <h3>Snoopy Project</h3>
+                  <h3>Oficinas TJ</h3>
                 </div>
               </div>
             </div>
@@ -275,8 +285,8 @@ function buildPrintableLabelHtml(record) {
               <div class="label-line"><strong>Folio:</strong> <span>${escapeHtml(data.folio)}</span></div>
               <div class="label-line"><strong>Fecha:</strong> <span>${escapeHtml(data.fecha)}</span></div>
               <div class="label-line"><strong>Semana:</strong> <span>${escapeHtml(data.semana)}</span></div>
-              <div class="label-line"><strong>Nombre:</strong> <span>${escapeHtml(data.nombre)}</span></div>
-              <div class="label-line"><strong>Concepto:</strong> <span>${escapeHtml(data.concepto)}</span></div>
+              <div class="label-line label-line-stacked"><strong>Nombre:</strong> <span>${escapeHtml(data.nombre)}</span></div>
+              <div class="label-line label-line-stacked"><strong>Concepto:</strong> <span>${escapeHtml(data.concepto)}</span></div>
               <div class="label-line"><strong>Monto:</strong> <span>${escapeHtml(data.monto)}</span></div>
               <div class="label-line"><strong>Moneda:</strong> <span>${escapeHtml(data.moneda)}</span></div>
             </div>
@@ -379,7 +389,7 @@ export function printMovementLabel(record, options = {}) {
 
   const printFrame = document.createElement('iframe');
   printFrame.id = 'snoopy-receipt-print-frame';
-  printFrame.title = 'Impresión de comprobante Snoopy Project';
+  printFrame.title = 'Impresión de comprobante Oficinas TJ';
   printFrame.style.position = 'fixed';
   printFrame.style.right = '0';
   printFrame.style.bottom = '0';

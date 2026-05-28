@@ -3776,7 +3776,7 @@ body.modo-cancelado .report-table thead th {
 
 @media print {
   @page {
-    size: 58mm auto;
+    size: 80mm auto;
     margin: 0;
   }
 
@@ -3796,10 +3796,10 @@ body.modo-cancelado .report-table thead th {
     position: absolute !important;
     left: 0 !important;
     top: 0 !important;
-    width: 58mm !important;
-    max-width: 58mm !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
     min-height: auto !important;
-    padding: 1.5mm 3mm 3mm !important;
+    padding: 4mm 3mm !important;
     margin: 0 !important;
     border: none !important;
     border-radius: 0 !important;
@@ -3909,9 +3909,9 @@ body.modo-cancelado .report-table thead th {
   /* Propósito: evitar hojas extra cuando se imprima directamente desde la pantalla de Movimientos. */
   html,
   body {
-    width: 58mm !important;
-    min-width: 58mm !important;
-    max-width: 58mm !important;
+    width: 80mm !important;
+    min-width: 80mm !important;
+    max-width: 80mm !important;
     min-height: 0 !important;
     height: auto !important;
     margin: 0 !important;
@@ -3922,7 +3922,7 @@ body.modo-cancelado .report-table thead th {
 
   /* Propósito: conservar visible solo la etiqueta y eliminar espacio extra del layout. */
   #root {
-    width: 58mm !important;
+    width: 80mm !important;
     min-height: 0 !important;
     height: auto !important;
     margin: 0 !important;
@@ -3935,12 +3935,12 @@ body.modo-cancelado .report-table thead th {
     position: fixed !important;
     left: 0 !important;
     top: 0 !important;
-    width: 58mm !important;
-    max-width: 58mm !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
     min-height: 0 !important;
     height: auto !important;
-    margin: 0 !important;
-    padding: 1.5mm 3mm 3mm !important;
+    margin: 0 auto !important;
+    padding: 4mm 3mm !important;
     overflow: hidden !important;
     text-align: center !important;
   }
@@ -4026,24 +4026,23 @@ body.modo-cancelado .report-table thead th {
 }
 
 @media print {
-  /* Propósito: evitar que el navegador recoloque la etiqueta y deje recortes arriba. */
+  /* Propósito: centrar la etiqueta dentro de la hoja elegida en el diálogo de impresión. */
   html,
   body,
   #root {
-    width: 58mm !important;
-    min-width: 58mm !important;
-    max-width: 58mm !important;
-    margin: 0 !important;
-    padding: 0 !important;
+    width: 100% !important;
+    min-width: 100% !important;
+    max-width: none !important;
   }
 
   .label-sheet {
-    position: absolute !important;
-    left: 0 !important;
-    top: 0 !important;
-    width: 58mm !important;
-    max-width: 58mm !important;
-    margin: 0 !important;
+    position: relative !important;
+    left: auto !important;
+    right: auto !important;
+    top: auto !important;
+    width: 80mm !important;
+    max-width: 80mm !important;
+    margin: 4mm auto 0 !important;
   }
 
   .label-brand {
@@ -4440,3 +4439,216 @@ body.modo-cancelado .report-table thead th {
     padding: 14px 16px 0;
   }
 }
+
+/* =========================================================
+   VISTA PREVIA REAL DEL TICKET 58MM EN MOVIMIENTOS
+   Propósito: mostrar el recibo con ancho real de ticket, pero con alto dinámico para que no se vea cortado.
+========================================================= */
+.thermal-preview-card {
+  overflow: hidden;
+}
+
+/* Propósito: centrar el ticket y dejar que el alto crezca según el contenido capturado. */
+.thermal-preview-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 18px;
+  max-height: none;
+  overflow: visible;
+  background:
+    linear-gradient(45deg, #f8fafc 25%, transparent 25%),
+    linear-gradient(-45deg, #f8fafc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #f8fafc 75%),
+    linear-gradient(-45deg, transparent 75%, #f8fafc 75%);
+  background-color: #eef2f7;
+  background-size: 20px 20px;
+  background-position:
+    0 0,
+    0 10px,
+    10px -10px,
+    -10px 0;
+}
+
+/* Propósito: indicar que la previsualización representa el ticket físico. */
+.thermal-preview-size-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  color: #475569;
+  font-size: 0.78rem;
+  font-weight: 700;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
+}
+
+.thermal-preview-size-note .material-icons-outlined {
+  font-size: 18px;
+}
+
+/* Propósito: representar el ancho real del papel térmico sin forzar una hoja larga en pantalla. */
+.thermal-print-page {
+  width: 58mm;
+  min-width: 58mm;
+  max-width: 58mm;
+  height: auto;
+  min-height: auto;
+  margin: 0 auto;
+  padding: 2mm 1mm 3mm;
+  background: #ffffff;
+  color: #000000;
+  font-family: Arial, Helvetica, sans-serif;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.2);
+  outline: 1px dashed rgba(15, 23, 42, 0.28);
+  overflow: visible;
+}
+
+/* Propósito: usar un ancho útil interno para que el texto no choque con los bordes del preview. */
+.thermal-label-sheet {
+  width: 100%;
+  max-width: 100%;
+  margin: 0;
+  padding: 0;
+  background: #ffffff;
+  color: #000000;
+  border: none;
+  box-shadow: none;
+  text-align: left;
+  line-height: 1;
+  overflow: visible;
+}
+
+.thermal-label-top {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.6mm;
+  padding-bottom: 1mm;
+  margin-bottom: 0.4mm;
+  border-bottom: 1px solid #000000;
+  text-align: left;
+}
+
+.thermal-label-brand {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 0.5mm;
+  text-align: left;
+}
+
+.thermal-label-brand img {
+  display: block;
+  width: 10mm;
+  height: 11mm;
+  object-fit: contain;
+  margin: 0;
+}
+
+.thermal-label-brand h3 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.05;
+  font-weight: 800;
+  color: #000000;
+}
+
+.thermal-label-body {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  text-align: left;
+}
+
+/* Propósito: mostrar cada dato del comprobante igual que en el ticket, sin cortar valores largos. */
+.thermal-label-line {
+  display: block;
+  width: 100%;
+  padding: 1mm 0;
+  border-bottom: 1px dashed #000000;
+  color: #000000;
+  font-size: 15.5px;
+  line-height: 1.18;
+  font-weight: 400;
+  text-align: left;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.thermal-label-line strong {
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.thermal-label-line span {
+  font-weight: 400;
+}
+
+/* Propósito: mostrar Nombre y Concepto con el título arriba y el valor justo debajo. */
+.thermal-label-line-stacked strong,
+.thermal-label-line-stacked span {
+  display: block;
+}
+
+.thermal-label-line-stacked span {
+  margin-top: 0.7mm;
+}
+
+.thermal-label-footer {
+  margin-top: 8mm;
+  padding-top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.2mm;
+  text-align: center;
+}
+
+/* Propósito: simular la zona de firma sin mandar la firma hasta el final de una hoja larga. */
+.thermal-signature-area {
+  width: 100%;
+  min-height: 26mm;
+  margin-top: 0;
+  padding-top: 20mm;
+  text-align: center;
+}
+
+.thermal-signature-line {
+  width: 82%;
+  height: 1px;
+  background: #000000;
+  margin: 0 auto 1.2mm;
+}
+
+.thermal-signature-label {
+  font-size: 15.5px;
+  line-height: 1.12;
+  font-weight: 400;
+  color: #000000;
+}
+
+.thermal-print-note {
+  margin-top: 0;
+  font-size: 15.5px;
+  line-height: 1.16;
+  font-weight: 400;
+  color: #000000;
+  text-transform: none;
+}
+
+@media (max-width: 640px) {
+  /* Propósito: permitir que el ticket conserve proporción sin romper pantallas pequeñas. */
+  .thermal-preview-stage {
+    align-items: flex-start;
+    overflow-x: auto;
+  }
+}
+
