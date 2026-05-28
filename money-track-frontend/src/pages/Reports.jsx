@@ -1229,7 +1229,7 @@ function Reports({ reportType = 'ingreso' }) {
             <div className="cancel-confirm-content">
               <h2 id="cancelConfirmTitle">Cancelar movimiento</h2>
               <p>
-                Este movimiento se marcará como cancelado. Lo verás en rojo por un momento y después aparecerá en Historial.
+                Este movimiento se marcará como cancelado. Lo verás en rojo por un momento y después aparecerá en Historial. ¿Estás seguro que deseas cancelar?
               </p>
             </div>
 
@@ -1262,7 +1262,7 @@ function Reports({ reportType = 'ingreso' }) {
                 onClick={closeCancelModal}
                 disabled={Boolean(deletingId)}
               >
-                Conservar
+                No, no estoy seguro
               </button>
 
               <button
@@ -1274,7 +1274,7 @@ function Reports({ reportType = 'ingreso' }) {
                 <span className="material-icons-outlined">
                   {deletingId === cancelCandidate.id ? 'hourglass_top' : 'block'}
                 </span>
-                {deletingId === cancelCandidate.id ? 'Cancelando...' : 'Cancelar movimiento'}
+                {deletingId === cancelCandidate.id ? 'Cancelando...' : 'Sí, estoy seguro'}
               </button>
             </div>
           </section>

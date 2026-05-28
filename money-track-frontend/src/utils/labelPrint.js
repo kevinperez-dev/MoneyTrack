@@ -276,7 +276,7 @@ function buildPrintableLabelHtml(record) {
             <div class="label-top">
               <div class="label-brand">
                 <div>
-                  <h3>Oficinas TJ</h3>
+                  <h3>Oficina TJ</h3>
                 </div>
               </div>
             </div>
@@ -389,7 +389,7 @@ export function printMovementLabel(record, options = {}) {
 
   const printFrame = document.createElement('iframe');
   printFrame.id = 'snoopy-receipt-print-frame';
-  printFrame.title = 'Impresión de comprobante Oficinas TJ';
+  printFrame.title = 'Impresión de comprobante Oficina TJ';
   printFrame.style.position = 'fixed';
   printFrame.style.right = '0';
   printFrame.style.bottom = '0';

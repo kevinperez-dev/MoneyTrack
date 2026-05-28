@@ -541,7 +541,7 @@ function Dashboard() {
                   <div className="thermal-label-top">
                     <div className="thermal-label-brand">
                       <div>
-                        <h3>Oficinas TJ</h3>
+                        <h3>Oficina TJ</h3>
                       </div>
                     </div>
                   </div>
