@@ -101,9 +101,9 @@ button {
 }
 
 .brand-logo-frame {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
+  width: 46px;
+  height: 46px;
+  border-radius: 13px;
   background: rgba(255, 255, 255, 0.95);
   display: inline-flex;
   align-items: center;
@@ -113,8 +113,8 @@ button {
 }
 
 .brand-logo {
-  width: 32px;
-  height: 32px;
+  width: 60px;
+  height: 60px;
   object-fit: contain;
 }
 
