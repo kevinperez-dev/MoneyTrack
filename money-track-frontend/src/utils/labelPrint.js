@@ -22,6 +22,13 @@ function escapeHtml(value) {
     .replace(/'/g, '&#039;');
 }
 
+// Propósito: conservar el formato escrito en conceptos largos al imprimir el ticket.
+function normalizeStructuredText(value, fallback) {
+  const text = String(value ?? '').replace(/\r\n/g, '\n').trim();
+
+  return text || fallback;
+}
+
 // Propósito: obtener el texto del pie según el tipo de movimiento.
 function getFooterText(record) {
   if (record?.tipo === 'cancelado') return 'Registro cancelado';
@@ -40,7 +47,7 @@ function buildLabelData(record) {
     fecha: formatShortDate(safeRecord.fecha),
     semana: info.week,
     nombre: String(safeRecord.nombre || '').trim() || 'Movimiento de muestra',
-    concepto: String(safeRecord.descripcion || '').trim() || 'Descripción breve del movimiento.',
+    concepto: normalizeStructuredText(safeRecord.descripcion, 'Descripción breve del movimiento.'),
     monto: formatMoneyByCurrency(safeRecord.cantidad || 0, safeRecord.moneda),
     moneda: isDollar ? 'Dólares' : 'Pesos',
     footerText: getFooterText(safeRecord),
@@ -192,6 +199,14 @@ function buildPrintableLabelHtml(record) {
             margin-top: 0.8mm;
           }
 
+          /* Propósito: respetar saltos de línea y estructura en el campo Concepto. */
+          .label-line-concept .structured-text {
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            line-height: 1.2;
+          }
+
           .label-footer {
             margin-top: 5mm;
             padding-top: 0;
@@ -276,7 +291,7 @@ function buildPrintableLabelHtml(record) {
             <div class="label-top">
               <div class="label-brand">
                 <div>
-                  <h3>Oficina TJ</h3>
+                  <h3>Oficinas TJ</h3>
                 </div>
               </div>
             </div>
@@ -286,7 +301,7 @@ function buildPrintableLabelHtml(record) {
               <div class="label-line"><strong>Fecha:</strong> <span>${escapeHtml(data.fecha)}</span></div>
               <div class="label-line"><strong>Semana:</strong> <span>${escapeHtml(data.semana)}</span></div>
               <div class="label-line label-line-stacked"><strong>Nombre:</strong> <span>${escapeHtml(data.nombre)}</span></div>
-              <div class="label-line label-line-stacked"><strong>Concepto:</strong> <span>${escapeHtml(data.concepto)}</span></div>
+              <div class="label-line label-line-stacked label-line-concept"><strong>Concepto:</strong> <span class="structured-text">${escapeHtml(data.concepto)}</span></div>
               <div class="label-line"><strong>Monto:</strong> <span>${escapeHtml(data.monto)}</span></div>
               <div class="label-line"><strong>Moneda:</strong> <span>${escapeHtml(data.moneda)}</span></div>
             </div>
@@ -389,7 +404,7 @@ export function printMovementLabel(record, options = {}) {
 
   const printFrame = document.createElement('iframe');
   printFrame.id = 'snoopy-receipt-print-frame';
-  printFrame.title = 'Impresión de comprobante Oficina TJ';
+  printFrame.title = 'Impresión de comprobante Oficinas TJ';
   printFrame.style.position = 'fixed';
   printFrame.style.right = '0';
   printFrame.style.bottom = '0';

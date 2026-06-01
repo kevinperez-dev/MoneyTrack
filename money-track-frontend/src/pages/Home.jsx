@@ -58,7 +58,39 @@ function getExcelColumnName(columnIndex) {
 function createXlsxCell(rowIndex, columnIndex, value, styleId = 5) {
     const cellReference = `${getExcelColumnName(columnIndex)}${rowIndex}`;
 
+    if (value && typeof value === 'object' && value.type === 'number') {
+        const numericValue = Number(value.value);
+
+        if (!Number.isFinite(numericValue)) {
+            return `<c r="${cellReference}" s="${styleId}"/>`;
+        }
+
+        return `<c r="${cellReference}" s="${styleId}"><v>${numericValue}</v></c>`;
+    }
+
     return `<c r="${cellReference}" t="inlineStr" s="${styleId}"><is><t>${escapeExcelXml(value)}</t></is></c>`;
+}
+
+// Propósito: preparar montos como números reales para que Excel permita fórmulas y sumas.
+function createXlsxMoneyValue(value, options = {}) {
+    const normalizedValue = typeof value === 'number'
+        ? value
+        : String(value ?? '0')
+            .replace(/\$/g, '')
+            .replace(/,/g, '')
+            .replace(/\s/g, '')
+            .trim();
+    const numericValue = Number(normalizedValue || 0);
+
+    if (!Number.isFinite(numericValue)) {
+        return { type: 'number', value: null };
+    }
+
+    if (options.blankWhenZero && numericValue === 0) {
+        return { type: 'number', value: null };
+    }
+
+    return { type: 'number', value: numericValue };
 }
 
 // Propósito: crear una fila XML para un archivo .xlsx real.
@@ -334,6 +366,9 @@ function createZip(files) {
 function buildXlsxStylesXml() {
     return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">
+  <numFmts count="1">
+    <numFmt numFmtId="164" formatCode="$#,##0.00"/>
+  </numFmts>
   <fonts count="9">
     <font><sz val="10"/><color rgb="FF222222"/><name val="Calibri"/></font>
     <font><b/><sz val="16"/><color rgb="FF111827"/><name val="Calibri"/></font>
@@ -370,10 +405,10 @@ function buildXlsxStylesXml() {
     <xf numFmtId="0" fontId="3" fillId="3" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="7" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
     <xf numFmtId="0" fontId="8" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment horizontal="center" vertical="center" wrapText="1"/></xf>
-    <xf numFmtId="0" fontId="5" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
-    <xf numFmtId="0" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
-    <xf numFmtId="0" fontId="7" fillId="4" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
-    <xf numFmtId="0" fontId="8" fillId="5" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="164" fontId="5" fillId="4" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="164" fontId="6" fillId="5" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="164" fontId="7" fillId="4" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"><alignment vertical="center" wrapText="1"/></xf>
+    <xf numFmtId="164" fontId="8" fillId="5" borderId="2" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyNumberFormat="1"><alignment vertical="center" wrapText="1"/></xf>
   </cellXfs>
   <cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles>
 </styleSheet>`;
@@ -382,14 +417,12 @@ function buildXlsxStylesXml() {
 // Propósito: crear la hoja principal del archivo .xlsx con imagen de resumen en fila y registros visibles.
 function buildXlsxSheetXml({ weekText, cashRows, totals }) {
     const rows = [];
-    let rowIndex = 1;
 
-    rows.push(createXlsxRow(rowIndex, [{ column: 0, value: 'Control semanal', styleId: 1 }], 26));
-    rowIndex += 1;
-    rows.push(createXlsxRow(rowIndex, [{ column: 0, value: weekText, styleId: 2 }], 20));
-
-    const tableTitleRow = 15;
-    rows.push(createXlsxRow(tableTitleRow, [{ column: 0, value: 'Registros mostrados', styleId: 3 }], 24));
+    rows.push(createXlsxRow(1, [{ column: 0, value: 'Control semanal', styleId: 1 }], 28));
+    rows.push(createXlsxRow(2, [
+        { column: 0, value: 'Registros mostrados', styleId: 3 },
+        { column: 7, value: weekText, styleId: 2 }
+    ], 24));
 
     const headers = [
         'Fecha',
@@ -403,7 +436,7 @@ function buildXlsxSheetXml({ weekText, cashRows, totals }) {
         'Quedó en caja pesos'
     ];
 
-    rows.push(createXlsxRow(tableTitleRow + 1, headers.map((header, index) => {
+    rows.push(createXlsxRow(3, headers.map((header, index) => {
         const styleId = [3, 5, 7].includes(index)
             ? 7
             : [4, 6, 8].includes(index)
@@ -418,17 +451,17 @@ function buildXlsxSheetXml({ weekText, cashRows, totals }) {
     }), 24));
 
     cashRows.forEach((row, index) => {
-        const currentRow = tableTitleRow + 2 + index;
+        const currentRow = 4 + index;
         const values = [
             formatShortDate(row.fecha) || '',
             row.folio || '',
             row.descripcion || '',
-            row.ingresoDolares ? renderCurrencyAmount(row.ingresoDolares, 'dolares') : '--',
-            row.ingresoPesos ? renderCurrencyAmount(row.ingresoPesos, 'pesos') : '--',
-            row.egresoDolares ? renderCurrencyAmount(row.egresoDolares, 'dolares') : '--',
-            row.egresoPesos ? renderCurrencyAmount(row.egresoPesos, 'pesos') : '--',
-            renderCurrencyAmount(row.saldoDolares, 'dolares'),
-            renderCurrencyAmount(row.saldoPesos, 'pesos')
+            createXlsxMoneyValue(row.ingresoDolares, { blankWhenZero: true }),
+            createXlsxMoneyValue(row.ingresoPesos, { blankWhenZero: true }),
+            createXlsxMoneyValue(row.egresoDolares, { blankWhenZero: true }),
+            createXlsxMoneyValue(row.egresoPesos, { blankWhenZero: true }),
+            createXlsxMoneyValue(row.saldoDolares),
+            createXlsxMoneyValue(row.saldoPesos)
         ];
 
         rows.push(createXlsxRow(currentRow, values.map((value, column) => {
@@ -446,17 +479,17 @@ function buildXlsxSheetXml({ weekText, cashRows, totals }) {
         }), 22));
     });
 
-    const totalRowIndex = tableTitleRow + 2 + cashRows.length;
+    const totalRowIndex = 4 + cashRows.length;
     const totalValues = [
         '',
         '',
         'Totales de la semana',
-        renderCurrencyAmount(totals.totalIngresosDolares, 'dolares'),
-        renderCurrencyAmount(totals.totalIngresosPesos, 'pesos'),
-        renderCurrencyAmount(totals.totalEgresosDolares, 'dolares'),
-        renderCurrencyAmount(totals.totalEgresosPesos, 'pesos'),
-        renderCurrencyAmount(totals.finalBalanceDolares, 'dolares'),
-        renderCurrencyAmount(totals.finalBalancePesos, 'pesos')
+        createXlsxMoneyValue(totals.totalIngresosDolares),
+        createXlsxMoneyValue(totals.totalIngresosPesos),
+        createXlsxMoneyValue(totals.totalEgresosDolares),
+        createXlsxMoneyValue(totals.totalEgresosPesos),
+        createXlsxMoneyValue(totals.finalBalanceDolares),
+        createXlsxMoneyValue(totals.finalBalancePesos)
     ];
 
     rows.push(createXlsxRow(totalRowIndex, totalValues.map((value, column) => {
@@ -479,23 +512,25 @@ function buildXlsxSheetXml({ weekText, cashRows, totals }) {
   <sheetFormatPr defaultRowHeight="18"/>
   <cols>
     <col min="1" max="1" width="13" customWidth="1"/>
-    <col min="2" max="2" width="16" customWidth="1"/>
-    <col min="3" max="3" width="28" customWidth="1"/>
-    <col min="4" max="9" width="18" customWidth="1"/>
+    <col min="2" max="2" width="15" customWidth="1"/>
+    <col min="3" max="3" width="26" customWidth="1"/>
+    <col min="4" max="9" width="15" customWidth="1"/>
+    <col min="10" max="10" width="3" customWidth="1"/>
+    <col min="11" max="17" width="12" customWidth="1"/>
   </cols>
   <sheetData>
     ${rows.join('\n    ')}
   </sheetData>
   <mergeCells count="3">
     <mergeCell ref="A1:I1"/>
-    <mergeCell ref="A2:I2"/>
-    <mergeCell ref="A15:I15"/>
+    <mergeCell ref="A2:G2"/>
+    <mergeCell ref="H2:I2"/>
   </mergeCells>
   <drawing r:id="rId1"/>
 </worksheet>`;
 }
 
-// Propósito: crear el XML del dibujo que posiciona la imagen dentro de Excel.
+// Propósito: crear el XML del dibujo que posiciona la imagen del resumen a la derecha de la tabla.
 function buildDrawingXml(width, height) {
     const cx = width * 9525;
     const cy = height * 9525;
@@ -504,9 +539,9 @@ function buildDrawingXml(width, height) {
 <xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
   <xdr:oneCellAnchor editAs="oneCell">
     <xdr:from>
-      <xdr:col>0</xdr:col>
+      <xdr:col>10</xdr:col>
       <xdr:colOff>0</xdr:colOff>
-      <xdr:row>3</xdr:row>
+      <xdr:row>1</xdr:row>
       <xdr:rowOff>0</xdr:rowOff>
     </xdr:from>
     <xdr:ext cx="${cx}" cy="${cy}"/>
@@ -560,8 +595,8 @@ function buildXlsxFiles({ sheetName, weekText, summaryImageBytes, imageWidth, im
             content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <cp:coreProperties xmlns:cp="http://schemas.openxmlformats.org/package/2006/metadata/core-properties" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:dcterms="http://purl.org/dc/terms/" xmlns:dcmitype="http://purl.org/dc/dcmitype/" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
   <dc:title>Control semanal</dc:title>
-  <dc:creator>Snoopy Project</dc:creator>
-  <cp:lastModifiedBy>Snoopy Project</cp:lastModifiedBy>
+  <dc:creator>Oficinas TJ</dc:creator>
+  <cp:lastModifiedBy>Oficinas TJ</cp:lastModifiedBy>
   <dcterms:created xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:created>
   <dcterms:modified xsi:type="dcterms:W3CDTF">${new Date().toISOString()}</dcterms:modified>
 </cp:coreProperties>`
@@ -570,7 +605,7 @@ function buildXlsxFiles({ sheetName, weekText, summaryImageBytes, imageWidth, im
             name: 'docProps/app.xml',
             content: `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <Properties xmlns="http://schemas.openxmlformats.org/officeDocument/2006/extended-properties" xmlns:vt="http://schemas.openxmlformats.org/officeDocument/2006/docPropsVTypes">
-  <Application>Snoopy Project</Application>
+  <Application>Oficinas TJ</Application>
 </Properties>`
         },
         {

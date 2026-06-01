@@ -85,6 +85,13 @@ function formatAmountInputValue(value) {
   return formattedInteger;
 }
 
+// Propósito: conservar saltos de línea y espacios útiles para conceptos largos o estructurados.
+function formatStructuredConcept(value, fallback = 'Descripción breve del movimiento.') {
+  const text = String(value ?? '').replace(/\r\n/g, '\n').trim();
+
+  return text || fallback;
+}
+
 function Dashboard() {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
@@ -121,6 +128,7 @@ function Dashboard() {
 
   const config = modeConfig[type];
   const previewInfo = getISOWeekInfo(form.fecha || getTodayISO());
+  const previewConcept = formatStructuredConcept(form.descripcion);
 
   // Folio automático calculado con los movimientos existentes en PostgreSQL.
   const folio = useMemo(() => {
@@ -457,15 +465,22 @@ function Dashboard() {
                   />
                 </div>
 
-                <div className="form-group">
-                  <label htmlFor="descripcion">Descripción</label>
+                <div className="form-group concept-form-group">
+                  <label htmlFor="descripcion">Concepto</label>
                   <textarea
                     id="descripcion"
-                    rows="4"
-                    placeholder="Describe el movimiento"
+                    className="structured-concept-input"
+                    rows="7"
+                    placeholder={`Escribe el concepto con el formato que necesites. Ejemplo:
+Pago de 2 carretas
+Cliente: Ramón
+Detalle: Zoto / Ramón`}
                     value={form.descripcion}
                     onChange={(event) => updateForm('descripcion', event.target.value)}
                   />
+                  <small className="field-helper">
+                    Puedes usar Enter para separar líneas; el ticket respetará ese formato.
+                  </small>
                 </div>
 
                 <div className="form-group">
@@ -541,7 +556,7 @@ function Dashboard() {
                   <div className="thermal-label-top">
                     <div className="thermal-label-brand">
                       <div>
-                        <h3>Oficina TJ</h3>
+                        <h3>Oficinas TJ</h3>
                       </div>
                     </div>
                   </div>
@@ -564,9 +579,9 @@ function Dashboard() {
                       <span>{form.nombre.trim() || 'Movimiento de muestra'}</span>
                     </div>
 
-                    <div className="thermal-label-line thermal-label-line-stacked">
+                    <div className="thermal-label-line thermal-label-line-stacked thermal-label-line-concept">
                       <strong>Concepto:</strong>
-                      <span>{form.descripcion.trim() || 'Descripción breve del movimiento.'}</span>
+                      <span className="thermal-structured-text">{previewConcept}</span>
                     </div>
 
                     <div className="thermal-label-line">

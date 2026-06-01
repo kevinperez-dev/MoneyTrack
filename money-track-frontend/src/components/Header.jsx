@@ -15,6 +15,7 @@ function Header({
     const navigate = useNavigate();
     const [isMovementsMenuOpen, setIsMovementsMenuOpen] = useState(false);
     const [isReportsMenuOpen, setIsReportsMenuOpen] = useState(false);
+    const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
     // Cierra sesión y regresa al login.
     const handleLogout = (event) => {
@@ -28,6 +29,7 @@ function Header({
     const handleMovementClick = (type) => {
         setIsMovementsMenuOpen(false);
         setIsReportsMenuOpen(false);
+        setIsMobileMenuOpen(false);
 
         if (onMovementTypeChange) {
             onMovementTypeChange(type);
@@ -41,6 +43,7 @@ function Header({
     const handleReportClick = (type) => {
         setIsReportsMenuOpen(false);
         setIsMovementsMenuOpen(false);
+        setIsMobileMenuOpen(false);
 
         if (onReportTypeChange) {
             onReportTypeChange(type);
@@ -72,12 +75,26 @@ function Header({
         setIsMovementsMenuOpen(false);
     };
 
+    // Propósito: abrir o cerrar el menú compacto usado en celulares.
+    const toggleMobileMenu = () => {
+        setIsMobileMenuOpen((current) => !current);
+        setIsMovementsMenuOpen(false);
+        setIsReportsMenuOpen(false);
+    };
+
+    // Propósito: cerrar el menú móvil al navegar a Inicio.
+    const closeMobileMenu = () => {
+        setIsMobileMenuOpen(false);
+        setIsMovementsMenuOpen(false);
+        setIsReportsMenuOpen(false);
+    };
+
     return (
-        <header className="topbar">
+        <header className={`topbar ${isMobileMenuOpen ? 'mobile-menu-open' : ''}`}>
             <div className="topbar-shell">
                 <Link to="/inicio" className="brand" aria-label="Ir a Inicio">
                     <span className="brand-logo-frame">
-                        <img src="/snoopy-laptop-removebg-preview.png" alt="Snoopy Project" className="brand-logo" />
+                        <img src="/snoopy-laptop-removebg-preview.png" alt="Logo Oficinas TJ" className="brand-logo" />
                     </span>
 
                     <span className="brand-copy">
@@ -85,6 +102,17 @@ function Header({
                         <span className="brand-subtitle">Control de ingresos y egresos</span>
                     </span>
                 </Link>
+
+                <button
+                    type="button"
+                    className="mobile-menu-toggle"
+                    onClick={toggleMobileMenu}
+                    aria-label={isMobileMenuOpen ? 'Cerrar menú' : 'Abrir menú'}
+                    aria-expanded={isMobileMenuOpen}
+                >
+                    <span className="material-icons-outlined">{isMobileMenuOpen ? 'close' : 'menu'}</span>
+                    <span>Menú</span>
+                </button>
 
                 <nav className="top-nav" aria-label="Navegación principal">
                     <Link
@@ -183,6 +211,92 @@ function Header({
                         <span className="material-icons-outlined">logout</span>
                         <span>Cerrar sesión</span>
                     </button>
+                </div>
+
+                <div className="mobile-menu-panel" aria-label="Menú móvil">
+                    <Link
+                        to="/inicio"
+                        className={`mobile-menu-item ${activePage === 'inicio' ? 'active' : ''}`}
+                        onClick={closeMobileMenu}
+                    >
+                        <span className="material-icons-outlined">dashboard</span>
+                        <span>Inicio</span>
+                    </Link>
+
+                    <div className="mobile-menu-group">
+                        <div className="mobile-menu-group-title">
+                            <span className="material-icons-outlined">swap_vert</span>
+                            <span>Movimientos</span>
+                        </div>
+
+                        <div className="mobile-menu-options">
+                            <button
+                                type="button"
+                                className={`mobile-menu-chip ${movementType === 'ingreso' ? 'active' : ''}`}
+                                onClick={() => handleMovementClick('ingreso')}
+                            >
+                                <span className="material-icons-outlined">south_west</span>
+                                Ingresos
+                            </button>
+
+                            <button
+                                type="button"
+                                className={`mobile-menu-chip ${movementType === 'egreso' ? 'active' : ''}`}
+                                onClick={() => handleMovementClick('egreso')}
+                            >
+                                <span className="material-icons-outlined">north_east</span>
+                                Egresos
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mobile-menu-group">
+                        <div className="mobile-menu-group-title">
+                            <span className="material-icons-outlined">assessment</span>
+                            <span>Reportes</span>
+                        </div>
+
+                        <div className="mobile-menu-options">
+                            <button
+                                type="button"
+                                className={`mobile-menu-chip ${reportType === 'ingreso' ? 'active' : ''}`}
+                                onClick={() => handleReportClick('ingreso')}
+                            >
+                                <span className="material-icons-outlined">south_west</span>
+                                Ingresos
+                            </button>
+
+                            <button
+                                type="button"
+                                className={`mobile-menu-chip ${reportType === 'egreso' ? 'active' : ''}`}
+                                onClick={() => handleReportClick('egreso')}
+                            >
+                                <span className="material-icons-outlined">north_east</span>
+                                Egresos
+                            </button>
+
+                            <button
+                                type="button"
+                                className={`mobile-menu-chip ${reportType === 'cancelado' ? 'active' : ''}`}
+                                onClick={() => handleReportClick('cancelado')}
+                            >
+                                <span className="material-icons-outlined">block</span>
+                                Historial
+                            </button>
+                        </div>
+                    </div>
+
+                    <div className="mobile-menu-footer">
+                        <div className="mobile-menu-user" title="Usuario activo">
+                            <span className="material-icons-outlined">person</span>
+                            <span>{getCurrentUser()}</span>
+                        </div>
+
+                        <button type="button" className="mobile-menu-logout" onClick={handleLogout}>
+                            <span className="material-icons-outlined">logout</span>
+                            <span>Cerrar sesión</span>
+                        </button>
+                    </div>
                 </div>
             </div>
         </header>

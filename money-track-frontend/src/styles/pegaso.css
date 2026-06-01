@@ -3095,7 +3095,7 @@ body.modo-egreso .report-section-tab.active .material-icons-outlined {
 .pagina-dashboard .history-table tbody td:nth-child(5) {
   width: auto;
   text-align: left !important;
-  white-space: normal !important;
+  white-space: pre-line !important;
   word-break: break-word;
   overflow-wrap: anywhere;
 }
@@ -4440,6 +4440,32 @@ body.modo-cancelado .report-table thead th {
   }
 }
 
+
+
+/* =========================================================
+   CONCEPTO ESTRUCTURADO EN MOVIMIENTOS
+   Propósito: permitir que el concepto se capture con saltos de línea y se lea mejor en ticket.
+========================================================= */
+.concept-form-group .structured-concept-input {
+  min-height: 148px;
+  line-height: 1.45;
+  resize: vertical;
+  white-space: pre-wrap;
+}
+
+.concept-form-group .structured-concept-input::placeholder {
+  color: #94a3b8;
+  white-space: pre-line;
+}
+
+.field-helper {
+  display: block;
+  margin-top: 7px;
+  color: #64748b;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
 /* =========================================================
    VISTA PREVIA REAL DEL TICKET 58MM EN MOVIMIENTOS
    Propósito: mostrar el recibo con ancho real de ticket, pero con alto dinámico para que no se vea cortado.
@@ -4602,6 +4628,14 @@ body.modo-cancelado .report-table thead th {
   margin-top: 0.7mm;
 }
 
+/* Propósito: conservar saltos de línea del concepto dentro de la vista previa del ticket. */
+.thermal-label-line-concept .thermal-structured-text {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+  line-height: 1.22;
+}
+
 .thermal-label-footer {
   margin-top: 8mm;
   padding-top: 0;
@@ -4652,3 +4686,425 @@ body.modo-cancelado .report-table thead th {
   }
 }
 
+
+/* =========================================================
+   HEADER RESPONSIVE PARA CELULAR
+   Propósito: alinear correctamente logo, navegación y acciones
+   cuando el sistema se abre desde pantalla móvil.
+========================================================= */
+@media (max-width: 640px) {
+  .topbar {
+    min-height: auto;
+    padding: 14px 14px 16px;
+    align-items: stretch;
+  }
+
+  .topbar-shell {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: 12px;
+  }
+
+  .brand {
+    width: 100%;
+    justify-content: center;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .brand-logo-frame {
+    width: 54px;
+    height: 54px;
+    border-radius: 16px;
+  }
+
+  .brand-logo {
+    width: 48px;
+    height: 48px;
+  }
+
+  .brand-copy {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .brand-name {
+    font-size: 1.18rem;
+    line-height: 1.05;
+  }
+
+  .brand-subtitle {
+    font-size: 0.84rem;
+    line-height: 1.15;
+  }
+
+  .top-nav {
+    width: 100%;
+    justify-self: stretch;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    align-items: stretch;
+    gap: 7px;
+    padding: 8px;
+    border-radius: 26px;
+  }
+
+  .top-nav-dropdown {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .top-nav-link {
+    width: 100%;
+    min-width: 0;
+    min-height: 48px;
+    padding: 10px 7px;
+    font-size: 0.82rem;
+    gap: 5px;
+  }
+
+  .top-nav-dropdown-toggle {
+    position: relative;
+    min-width: 0;
+    width: 100%;
+    justify-content: center;
+    padding-right: 20px;
+  }
+
+  .top-nav-text {
+    min-width: 0;
+    justify-content: center;
+    gap: 5px;
+  }
+
+  .top-nav-text span:not(.material-icons-outlined),
+  .top-nav-link > span:not(.material-icons-outlined) {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .top-nav-icon {
+    flex: 0 0 auto;
+    font-size: 18px;
+  }
+
+  .top-nav-mini-caret {
+    position: absolute;
+    right: 6px;
+    font-size: 16px;
+  }
+
+  .top-nav-dropdown-menu {
+    position: absolute;
+    top: calc(100% + 8px);
+    left: 0;
+    right: 0;
+    width: max-content;
+    min-width: 190px;
+    max-width: calc(100vw - 32px);
+    transform: none;
+    z-index: 90;
+  }
+
+  .topbar-actions {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .user-box,
+  .logout-link {
+    width: 100%;
+    min-width: 0;
+    justify-content: center;
+    text-align: center;
+    padding: 10px 12px;
+  }
+
+  .user-box span:last-child,
+  .logout-link span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 390px) {
+  .topbar {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+
+  .brand-name {
+    font-size: 1.08rem;
+  }
+
+  .brand-subtitle {
+    font-size: 0.78rem;
+  }
+
+  .top-nav {
+    gap: 5px;
+    padding: 7px;
+  }
+
+  .top-nav-link {
+    min-height: 46px;
+    padding: 9px 5px;
+    font-size: 0.76rem;
+  }
+
+  .top-nav-icon {
+    font-size: 17px;
+  }
+
+  .topbar-actions {
+    gap: 8px;
+  }
+
+  .user-box,
+  .logout-link {
+    font-size: 0.78rem;
+    padding: 9px 8px;
+  }
+}
+
+/* =========================================================
+   MENÚ DESPLEGABLE MÓVIL DEL ENCABEZADO
+   Propósito: reemplazar la navegación completa por un botón de menú
+   cuando la pantalla es pequeña, manteniendo el encabezado limpio.
+========================================================= */
+.mobile-menu-toggle,
+.mobile-menu-panel {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .topbar {
+    padding: 12px 14px;
+  }
+
+  .topbar-shell {
+    width: 100%;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px 12px;
+  }
+
+  .brand {
+    width: auto;
+    justify-content: flex-start;
+    justify-self: start;
+    gap: 10px;
+    min-width: 0;
+  }
+
+  .brand-logo-frame {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+  }
+
+  .brand-logo {
+    width: 42px;
+    height: 42px;
+  }
+
+  .brand-copy {
+    min-width: 0;
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .brand-name {
+    max-width: 190px;
+    font-size: 1.05rem;
+    line-height: 1.08;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .brand-subtitle {
+    max-width: 190px;
+    font-size: 0.72rem;
+    line-height: 1.15;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-menu-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    min-height: 42px;
+    padding: 9px 13px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    background: rgba(255, 255, 255, 0.10);
+    color: #ffffff;
+    font-size: 0.83rem;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .mobile-menu-toggle .material-icons-outlined {
+    font-size: 20px;
+  }
+
+  .top-nav,
+  .topbar-actions {
+    display: none !important;
+  }
+
+  .mobile-menu-panel {
+    grid-column: 1 / -1;
+    width: 100%;
+    display: none;
+    flex-direction: column;
+    gap: 10px;
+    padding: 10px;
+    border-radius: 22px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.07);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  }
+
+  .topbar.mobile-menu-open .mobile-menu-panel {
+    display: flex;
+  }
+
+  .mobile-menu-item,
+  .mobile-menu-group,
+  .mobile-menu-footer {
+    width: 100%;
+  }
+
+  .mobile-menu-item {
+    min-height: 44px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    border-radius: 16px;
+    color: rgba(255, 255, 255, 0.92);
+    text-decoration: none;
+    font-weight: 700;
+  }
+
+  .mobile-menu-item.active {
+    background: #ffffff;
+    color: #151515;
+  }
+
+  .mobile-menu-item .material-icons-outlined {
+    font-size: 20px;
+  }
+
+  .mobile-menu-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px;
+    border-radius: 18px;
+    background: rgba(0, 0, 0, 0.18);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .mobile-menu-group-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    color: rgba(255, 255, 255, 0.78);
+    font-size: 0.78rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  .mobile-menu-group-title .material-icons-outlined {
+    font-size: 18px;
+  }
+
+  .mobile-menu-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .mobile-menu-chip,
+  .mobile-menu-user,
+  .mobile-menu-logout {
+    min-height: 42px;
+    border-radius: 14px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffffff;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 10px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-decoration: none;
+  }
+
+  .mobile-menu-chip.active {
+    background: #ffffff;
+    color: #151515;
+  }
+
+  .mobile-menu-chip .material-icons-outlined,
+  .mobile-menu-user .material-icons-outlined,
+  .mobile-menu-logout .material-icons-outlined {
+    font-size: 18px;
+  }
+
+  .mobile-menu-footer {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 8px;
+  }
+
+  .mobile-menu-user,
+  .mobile-menu-logout {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .mobile-menu-user span:last-child,
+  .mobile-menu-logout span:last-child {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 390px) {
+  .brand-name,
+  .brand-subtitle {
+    max-width: 150px;
+  }
+
+  .mobile-menu-toggle {
+    padding: 9px 11px;
+  }
+
+  .mobile-menu-options,
+  .mobile-menu-footer {
+    grid-template-columns: 1fr;
+  }
+}

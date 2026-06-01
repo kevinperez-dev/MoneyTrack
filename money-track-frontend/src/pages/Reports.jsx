@@ -50,6 +50,46 @@ function normalizeAdjustmentValue(value) {
   return String(value ?? '').trim();
 }
 
+// Propósito: limpiar la cantidad escrita en el modal, conservando solo números y un punto decimal.
+function normalizeAmountInput(value) {
+  const rawValue = String(value ?? '').replace(/,/g, '').replace(/[^0-9.]/g, '');
+
+  if (!rawValue) return '';
+
+  const firstDotIndex = rawValue.indexOf('.');
+
+  if (firstDotIndex === -1) {
+    return rawValue.replace(/^0+(?=\d)/, '');
+  }
+
+  const integerPart = rawValue
+    .slice(0, firstDotIndex)
+    .replace(/^0+(?=\d)/, '');
+
+  const decimalPart = rawValue
+    .slice(firstDotIndex + 1)
+    .replace(/\./g, '')
+    .slice(0, 2);
+
+  return `${integerPart || '0'}.${decimalPart}`;
+}
+
+// Propósito: mostrar separadores de miles en el campo de cantidad sin alterar el valor real guardado.
+function formatAmountInputValue(value) {
+  const amountText = String(value ?? '');
+
+  if (!amountText) return '';
+
+  const [integerPart, decimalPart] = amountText.split('.');
+  const formattedInteger = Number(integerPart || 0).toLocaleString('en-US');
+
+  if (amountText.includes('.')) {
+    return `${formattedInteger}.${decimalPart ?? ''}`;
+  }
+
+  return formattedInteger;
+}
+
 // Propósito: mostrar etiquetas legibles para tipo de movimiento.
 function getTypeLabel(type) {
   if (type === 'egreso') return 'Egreso';
@@ -1126,13 +1166,13 @@ function Reports({ reportType = 'ingreso' }) {
               <div className="filter-box">
                 <label htmlFor="editCantidad">Cantidad</label>
                 <input
-                  type="number"
+                  type="text"
                   id="editCantidad"
                   className="filter-control"
-                  min="0"
-                  step="0.01"
-                  value={editForm.cantidad}
-                  onChange={(event) => updateEditForm('cantidad', event.target.value)}
+                  inputMode="decimal"
+                  placeholder="0.00"
+                  value={formatAmountInputValue(editForm.cantidad)}
+                  onChange={(event) => updateEditForm('cantidad', normalizeAmountInput(event.target.value))}
                 />
               </div>
 
